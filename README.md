@@ -57,8 +57,8 @@ This project is licensed under the terms specified in [LICENSE](LICENSE).
 
 ## Contributing
 
-Contributions are welcome! Please submit issues and pull requests via the [GitHub repository](https://github.com/Mon-Systeme-Fourrager/pyholos).
+Contributions are welcome! Please submit issues and pull requests via the [GitHub repository](https://github.com/holos-aafc/pyholos).
 
 ## Support
 
-For questions or issues, please open an issue on the [issue tracker](https://github.com/Mon-Systeme-Fourrager/pyholos/issues).
+For questions or issues, please open an issue on the [issue tracker](https://github.com/holos-aafc/pyholos/issues).
