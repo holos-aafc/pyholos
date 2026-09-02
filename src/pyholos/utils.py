@@ -11,8 +11,12 @@ from pyholos.core_constants import CoreConstants
 class AutoNameEnum(StrEnum):
     """Allows automatically setting the member value identical to the member name."""
 
-    def _generate_next_value_(self, start, count, last_values):
-        return self
+    @staticmethod
+    def _generate_next_value_(name, start, count, last_values) -> str:
+        """
+        Return the name as the value for the enum member.
+        """
+        return name
 
 
 def read_holos_resource_table(
@@ -21,8 +25,9 @@ def read_holos_resource_table(
 ) -> DataFrame:
     return read_csv(path_file, sep=',', decimal='.', comment='#', **kwargs
                     ).replace({
-        'NotApplicable': CoreConstants.NotApplicable,
-        float('nan'): None})
+                        'NotApplicable': CoreConstants.NotApplicable,
+                        float('nan'): None
+                        })
 
 
 def get_local_args(kwargs: dict) -> dict:
@@ -30,7 +35,7 @@ def get_local_args(kwargs: dict) -> dict:
 
 
 def convert_camel_case_to_space_delimited(s: str) -> str:
-    return re.sub("([a-z])([A-Z])", r"\g<1> \g<2>", s)
+    return re.sub(r"([a-z])([A-Z])", r"\g<1> \g<2>", s)
 
 
 def concat_lists(*args) -> list:
@@ -48,7 +53,7 @@ def calc_average(values: Iterable[int | float]) -> float:
 
 def clean_string(
         input_string: str,
-        characters_to_remove: str | list[str] = (',', ' ', ';'),
+        characters_to_remove: str | tuple[str, ...] = (',', ' ', ';'),
         is_remove_text_between_parentheses: bool = True,
         is_remove_text_between_brackets: bool = True
 ) -> str:
@@ -59,10 +64,10 @@ def clean_string(
         input_string = input_string.replace(s, '')
 
     if is_remove_text_between_parentheses:
-        input_string = re.sub("[(].*?[)]", "", input_string)
+        input_string = re.sub(r"\(.*?\)", "", input_string)
 
     if is_remove_text_between_brackets:
-        input_string = re.sub("[[].*?[]]", "", input_string)
+        input_string = re.sub(r"\[.*?\]", "", input_string)
 
     return input_string
 

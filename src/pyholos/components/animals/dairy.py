@@ -1,377 +1,360 @@
 from datetime import date
+from abc import ABC
+from typing import Any, ClassVar, Literal, Mapping, TypeAliasType
+from dataclasses import dataclass, field
 
-from pyholos.common import Component, EnumGeneric, HolosVar
+from pyholos.common import EnumGeneric
 from pyholos.components.animals.common import (
-    AnimalCoefficientData, AnimalType, Bedding, BeddingMaterialType, Diet,
-    DietAdditiveType, HousingType, LivestockEmissionConversionFactorsData,
-    ManureStateType, Milk, ProductionStage,
-    get_ammonia_emission_factor_for_storage_of_beef_and_dairy_cattle_manure,
+    AnimalComponent,
+    AnimalType,
+    Bedding,
+    BeddingMaterialType,
+    Diet,
+    DietAdditiveType,
+    HousingType,
+    LivestockEmissionConversionFactorsData,
+    ManureStateType,
+    Milk,
+    ProductionStage,
     get_beef_and_dairy_cattle_coefficient_data,
     get_beef_and_dairy_cattle_feeding_activity_coefficient,
     get_default_methane_producing_capacity_of_manure,
-    get_fraction_of_organic_nitrogen_mineralized_data)
-from pyholos.config import DATE_FMT
-from pyholos.utils import convert_camel_case_to_space_delimited, get_local_args
+    get_fraction_of_organic_nitrogen_mineralized_data,
+    get_ammonia_emission_factor_for_storage_of_beef_and_dairy_cattle_manure
+)
+from pyholos.utils import convert_camel_case_to_space_delimited
 
+type FloatOrNA = float | Literal["N/A"]
 
-class _GroupNameType:
-    def __init__(
-            self,
-            animal_type: AnimalType,
-    ):
-        self.type = animal_type
-        self.name = convert_camel_case_to_space_delimited(s=animal_type.value.replace('Cow', '')).capitalize()
+@dataclass
+class GroupNameInfo:
+    """Group name info.  Used to generate group names from the animal type.
+    Not super useful and we might want more control on group names."""
+    group_type: AnimalType
+    group_name: str = field(init=False)
+
+    def __post_init__(self):
+        self.group_name = convert_camel_case_to_space_delimited(
+            s=self.group_type.value.replace('Cow', '')
+        ).capitalize()
 
 
 class GroupNameType(EnumGeneric):
-    dairy_heifers = _GroupNameType(animal_type=AnimalType.dairy_heifers)
-    dairy_lactating_cow = _GroupNameType(animal_type=AnimalType.dairy_lactating_cow)
-    dairy_calves = _GroupNameType(animal_type=AnimalType.dairy_calves)
-    dairy_dry_cow = _GroupNameType(animal_type=AnimalType.dairy_dry_cow)
+    """Group name types.  Enum for different implemented groups.
+    We might want to simply remove restriction on what group we can make as it is
+    not a restriction in Holos."""
+    dairy_heifers = GroupNameInfo(group_type=AnimalType.dairy_heifers)
+    dairy_lactating_cow = GroupNameInfo(group_type=AnimalType.dairy_lactating_cow)
+    dairy_calves = GroupNameInfo(group_type=AnimalType.dairy_calves)
+    dairy_dry_cow = GroupNameInfo(group_type=AnimalType.dairy_dry_cow)
+    dairy_bulls = GroupNameInfo(group_type=AnimalType.dairy_bulls)
 
 
-class DairyBase(Component):
-    def __init__(self):
-        super().__init__()
-        self.name = HolosVar(name="Name", value="Dairy cattle")
-        self.component_type = HolosVar(name="Component Type", value="H.Core.Models.Animals.Dairy.DairyComponent")
-        self.group_name = HolosVar(name="Group Name", value=None)
-        self.group_type = HolosVar(name="Group Type", value=None)
-        self.management_period_name = HolosVar(name="Management Period Name", value=None)
-        self.management_period_start_date = HolosVar(name="Management Period Start Date", value=None)
-        self.management_period_days = HolosVar(name="Management Period Days", value=None)
-        self.number_of_animals = HolosVar(name="Number Of Animals", value=None)
-        self.production_stage = HolosVar(name="Production Stage", value=None)
-        self.number_of_young_animals = HolosVar(name="Number Of Young Animals", value=None)
-        self.group_pairing_number = HolosVar(name="Group Pairing Number", value=None)
-        self.start_weight = HolosVar(name="Start Weight", value=None)
-        self.end_weight = HolosVar(name="End Weight", value=None)
-        self.average_daily_gain = HolosVar(name="Average Daily Gain", value=None)
-        self.milk_production = HolosVar(name="Milk Production", value=None)
-        self.milk_fat_content = HolosVar(name="Milk Fat Content", value=None)
-        self.milk_protein_content_as_percentage = HolosVar(name="Milk Protein Content As Percentage", value=None)
-        self.diet_additive_type = HolosVar(name="Diet Additive Type", value=None)
-        self.methane_conversion_factor_of_diet = HolosVar(name="Methane Conversion Factor Of Diet", value=None)
+# Constant that contains all columns the final CSVs need to have for this component.
+# Might be interesting to regroup columns that are shared between all animals components.
+_DAIRY_COMPONENT_HOLOS_VAR: tuple[tuple[str, str, type | TypeAliasType, Any], ...] = (
+    # (attribute_name, holos_name, type, value)   value can be a callable here
+    ("name", "Name", str, "Dairy cattle"),
+    ("component_type", "Component Type", str, "H.Core.Models.Animals.Dairy.DairyComponent"),
+    ("group_name", "Group Name", str, None),
+    ("group_type", "Group Type", AnimalType, None),
+    ("management_period_name", "Management Period Name", str, None),
+    ("management_period_start_date", "Management Period Start Date", date, None),
+    ("management_period_days", "Management Period Days", int, None),
+    ("number_of_animals", "Number Of Animals", float, None),
+    ("production_stage", "Production Stage", ProductionStage, None),
+    ("number_of_young_animals", "Number Of Young Animals", int, None),
+    ("group_pairing_number", "Group Pairing Number", int, None),
+    ("start_weight", "Start Weight", float, None),
+    ("end_weight", "End Weight", float, None),
+    ("average_daily_gain", "Average Daily Gain", float, None),
+    ("milk_production", "Milk Production", float, None),
+    ("milk_fat_content", "Milk Fat Content", float, None),
+    ("milk_protein_content_as_percentage", "Milk Protein Content As Percentage", float, None),
+    ("diet_additive_type", "Diet Additive Type", DietAdditiveType, None),
+    ("methane_conversion_factor_of_diet", "Methane Conversion Factor Of Diet", float, None),
+    ("methane_conversion_factor_adjusted", "Methane Conversion Factor Adjusted", float, 0),  # Deprecated
+    ("feed_intake", "Feed Intake", float, 0),
+    ("crude_protein", "Crude Protein", float, None),
+    ("ash_content_of_diet", "Ash Content Of Diet", float, None),
+    ("forage", "Forage", float, None),
+    ("tdn", "TDN", float, None),
+    ("starch", "Starch", float, None),
+    ("fat", "Fat", float, None),
+    ("me", "ME", float, None),
+    ("ndf", "NDF", float, None),
+    ("volatile_solid_adjusted", "Volatile Solid Adjusted", float, 1),  # Deprecated
+    ("nitrogen_excretion_adjusted", "Nitrogen Excretion Adjusted", float, 1),
+    ("dietary_net_energy_concentration", "Dietary Net Energy Concentration", float, None),
+    ("gain_coefficient", "Gain Coefficient", float, None),
+    ("gain_coefficient_a", "Gain Coefficient A", float, 0),
+    ("gain_coefficient_b", "Gain Coefficient B", float, 0),
+    ("housing_type", "Housing Type", HousingType, None),
+    ("activity_coefficient_of_feeding_situation", "Activity Coefficient Of Feeding Situation", float, None),
+    ("maintenance_coefficient", "Maintenance Coefficient", float, None),
+    ("user_defined_bedding_rate", "User Defined Bedding Rate", float, None),
+    ("total_carbon_kilograms_dry_matter_for_bedding", "Total Carbon Kilograms Dry Matter For Bedding", float, None),
+    ("total_nitrogen_kilograms_dry_matter_for_bedding", "Total Nitrogen Kilograms Dry Matter For Bedding", float, None),
+    ("moisture_content_of_bedding_material", "Moisture Content Of Bedding Material", float, None),
+    ("indoor_barn_temperature", "Indoor Barn Temperature", FloatOrNA, "N/A"),
+    ("methane_conversion_factor_of_manure", "Methane Conversion Factor Of Manure", float, None),
+    ("n2o_direct_emission_factor", "N2O Direct Emission Factor", float, None),
+    ("emission_factor_volatilization", "Emission Factor Volatilization", float, None),
+    ("volatilization_fraction", "Volatilization Fraction", float, None),
+    ("emission_factor_leaching", "Emission Factor Leaching", float, None),
+    ("fraction_leaching", "Fraction Leaching", float, None),
+    ("ash_content", "Ash Content", float, 8.0),  # Deprecated
+    ("methane_producing_capacity_of_manure", "Methane Producing Capacity Of Manure", float, None),
+    ("fraction_of_organic_nitrogen_immobilized", "Fraction Of Organic Nitrogen Immobilized", float, None),
+    ("fraction_of_organic_nitrogen_nitrified", "Fraction Of Organic Nitrogen Nitrified", float, None),
+    ("fraction_of_organic_nitrogen_mineralized", "Fraction Of Organic Nitrogen Mineralized", float, None),
+    ("manure_state_type", "Manure State Type", ManureStateType, None),
+    ("ammonia_emission_factor_for_manure_storage", "Ammonia Emission Factor For Manure Storage", float, None),
+    ("use_custom_indoor_housing_temperature", "Use Custom Indoor Housing Temperature", bool, False),
+)
 
-        self.methane_conversion_factor_adjusted = HolosVar(name="Methane Conversion Factor Adjusted", value=0)
-        """deprecated"""
-
-        self.feed_intake = HolosVar(name="Feed Intake", value=0)
-        """deprecated"""
-
-        self.crude_protein = HolosVar(name="Crude Protein", value=None)
-        self.ash_content_of_diet = HolosVar(name="Ash Content Of Diet", value=None)
-        self.forage = HolosVar(name="Forage", value=None)
-        self.tdn = HolosVar(name="TDN", value=None)
-        self.starch = HolosVar(name="Starch", value=None)
-        self.fat = HolosVar(name="Fat", value=None)
-        self.me = HolosVar(name="ME", value=None)
-        self.ndf = HolosVar(name="NDF", value=None)
-
-        self.volatile_solid_adjusted = HolosVar(name="Volatile Solid Adjusted", value=1)
-        """deprecated"""
-
-        self.nitrogen_excretion_adjusted = HolosVar(name="Nitrogen Excretion Adjusted", value=1)
-        """deprecated"""
-
-        self.dietary_net_energy_concentration = HolosVar(name="Dietary Net Energy Concentration", value=None)
-        self.gain_coefficient = HolosVar(name="Gain Coefficient", value=None)
-
-        self.gain_coefficient_a = HolosVar(name="Gain Coefficient A", value=0)
-        """deprecated"""
-
-        self.gain_coefficient_b = HolosVar(name="Gain Coefficient B", value=0)
-        """deprecated"""
-
-        self.housing_type = HolosVar(name="Housing Type", value=None)
-        self.activity_coefficient_of_feeding_situation = HolosVar(name="Activity Coefficient Of Feeding Situation",
-                                                                  value=None)
-        self.maintenance_coefficient = HolosVar(name="Maintenance Coefficient", value=None)
-        self.user_defined_bedding_rate = HolosVar(name="User Defined Bedding Rate", value=None)
-        self.total_carbon_kilograms_dry_matter_for_bedding = HolosVar(
-            name="Total Carbon Kilograms Dry Matter For Bedding", value=None)
-        self.total_nitrogen_kilograms_dry_matter_for_bedding = HolosVar(
-            name="Total Nitrogen Kilograms Dry Matter For Bedding", value=None)
-        self.moisture_content_of_bedding_material = HolosVar(name="Moisture Content Of Bedding Material", value=None)
-        self.indoor_barn_temperature = HolosVar(name="Indoor Barn Temperature", value=25)
-        self.methane_conversion_factor_of_manure = HolosVar(name="Methane Conversion Factor Of Manure", value=None)
-        self.n2o_direct_emission_factor = HolosVar(name="N2O Direct Emission Factor", value=None)
-        self.emission_factor_volatilization = HolosVar(name="Emission Factor Volatilization", value=None)
-        self.volatilization_fraction = HolosVar(name="Volatilization Fraction", value=None)
-        self.emission_factor_leaching = HolosVar(name="Emission Factor Leaching", value=None)
-        self.fraction_leaching = HolosVar(name="Fraction Leaching", value=None)
-
-        self.ash_content = HolosVar(name="Ash Content", value=8.0)
-        """deprecated"""
-
-        self.methane_producing_capacity_of_manure = HolosVar(name="Methane Producing Capacity Of Manure", value=None)
-
-        self.fraction_of_organic_nitrogen_immobilized = HolosVar(
-            name="Fraction Of Organic Nitrogen Immobilized",
-            value=None)
-        self.fraction_of_organic_nitrogen_nitrified = HolosVar(
-            name="Fraction Of Organic Nitrogen Nitrified",
-            value=None)
-        self.fraction_of_organic_nitrogen_mineralized = HolosVar(
-            name="Fraction Of Organic Nitrogen Mineralized",
-            value=None)
-        self.manure_state_type = HolosVar(
-            name="Manure State Type",
-            value=None)
-        self.ammonia_emission_factor_for_manure_storage = HolosVar(
-            name="Ammonia Emission Factor For Manure Storage",
-            value=None)
-
-        self.use_custom_indoor_housing_temperature = HolosVar(
-            name="Use Custom Indoor Housing Temperature",
-            value=False)
-
-        self._animal_coefficient_data: AnimalCoefficientData | None = None
-
-    def get_animal_coefficient_data(self):
-        self._animal_coefficient_data = get_beef_and_dairy_cattle_coefficient_data(animal_type=self.group_type.value)
-
-    def set_feeding_activity_coefficient(self):
-        self.activity_coefficient_of_feeding_situation.value = get_beef_and_dairy_cattle_feeding_activity_coefficient(
-            housing_type=self.housing_type.value)
+class DairyBase(AnimalComponent):
+    ANIMAL_COMPONENT_HOLOS_VAR: ClassVar[
+        tuple[tuple[str, str, type | TypeAliasType, Any], ...]
+    ] = _DAIRY_COMPONENT_HOLOS_VAR
 
 
-class Dairy(DairyBase):
-    def __init__(
-            self,
-            group_name: str,
-            animal_type: AnimalType,
-            management_period_name: str,
-            group_pairing_number: int,
-            management_period_start_date: date,
-            management_period_days: int,
-            number_of_animals: int,
-            production_stage: ProductionStage,
-            number_of_young_animals: int,
-            milk_data: Milk,
-            diet: Diet,
-            housing_type: HousingType,
-            manure_handling_system: ManureStateType,
-            manure_emission_factors: LivestockEmissionConversionFactorsData,
-            start_weight: float = None,
-            end_weight: float = None,
-            diet_additive_type: DietAdditiveType = DietAdditiveType.NONE,
-            bedding_material_type: BeddingMaterialType = BeddingMaterialType.NONE,
-    ):
-        """
+@dataclass
+class Dairy(DairyBase, ABC):
+    """
+    Base class for dairy animals. This class is not meant to be used directly.
+    Required inputs are passed to the constructor, and the post_init method is used
+    to generate the remaining attributes.
+
+    Note: I believe this class should not be abstract anymore and become the only class.
+        the restriction to predefined animal types is arbitrary and should be removed.
+        Or not, the animal types might be used in lookup tables. To investigate.
+
+    Args:
+        management_period_name: given name for the management period
+        group_pairing_number: number of paired animals
+        management_period_start_date: starting date for the management period
+        management_period_days: number of days of the management period
+        number_of_animals: number of animals
+        production_stage: ProductionStage class instance
+        number_of_young_animals: number of young animals
+        milk_data: class object that contains all required milk production data
+        diet: class object that contains all required diet data
+        housing_type: HousingType class instance
+        manure_handling_system: ManureStateType class instance
+        manure_emission_factors: LivestockEmissionConversionFactorsData class instance
+        start_weight: (kg) animal weight at the beginning of the management period
+        end_weight: (kg) animal weight at the end of the management period
+        diet_additive_type: type of the diet additive
+        bedding_material_type: bedding material type
+    """
+
+    animal_group: ClassVar[GroupNameInfo]
+
+    management_period_name: str
+    group_pairing_number: int
+    management_period_start_date: date
+    management_period_days: int
+    number_of_animals: float
+    production_stage: ProductionStage
+    number_of_young_animals: int
+    milk_data: Milk
+    diet: Diet
+    housing_type: HousingType
+    manure_handling_system: ManureStateType
+    manure_emission_factors: LivestockEmissionConversionFactorsData
+    diet_additive_type: DietAdditiveType
+    bedding_material_type: BeddingMaterialType
+    start_weight: float | None = None
+    end_weight: float | None = None
+    average_daily_gain: float | None = None
+
+    holos_overrides: Mapping[str, Any] = field(default_factory=dict)
+
+    group_type: AnimalType = field(init=False)
+    indoor_barn_temperature: FloatOrNA = field(init=False)
+
+    def update_holos_var(self, var_name: str, value: Any) -> None:
+        """Method to set an attribute to its default value in this class, but checks if holos_overrides
+        offers an override for the variable first
 
         Args:
-            group_name: GroupNames member
-            animal_type: AnimalType class instance
-            management_period_name: given name for the management period
-            group_pairing_number: number of paired animals
-            management_period_start_date: starting date for the management period
-            management_period_days: number of days of the management period
-            number_of_animals: number of animals
-            production_stage: ProductionStage class instance
-            number_of_young_animals: number of young animals
-            milk_data: class object that contains all required milk production data
-            diet: class object that contains all required diet data
-            housing_type: HousingType class instance
-            manure_handling_system: ManureStateType class instance
-            manure_emission_factors: LivestockEmissionConversionFactorsData class instance
-            start_weight: (kg) animal weight at the beginning of the management period
-            end_weight: (kg) animal weight at the end of the management period
-            diet_additive_type: type of the diet additive
-            bedding_material_type: bedding material type
+            var_name (str): variable name as used by the class
+            value (Any): variable value
         """
+        if var_name not in self.holos_var_names:
+            raise KeyError(f"{var_name} is not a valid Holos variable.")
+        if var_name in self.holos_overrides:
+            value = self.holos_overrides[var_name]
+        setattr(self, var_name, value)
+
+    def __post_init__(self):
         super().__init__()
-        self.group_name.value = group_name
-        self.group_type.value = animal_type.value
-        self.management_period_name.value = management_period_name
-        self.management_period_start_date.value = management_period_start_date.strftime(DATE_FMT)
-        self.management_period_days.value = management_period_days
-        self.number_of_animals.value = number_of_animals
-        self.production_stage.value = production_stage.value
-        self.number_of_young_animals.value = number_of_young_animals
-        self.group_pairing_number.value = group_pairing_number
+        self.update_holos_var("group_name", self.animal_group.group_name)
+        self.update_holos_var("group_type", self.animal_group.group_type)
 
-        self.get_animal_coefficient_data()
-        self.start_weight.value = self._animal_coefficient_data.default_initial_weight if start_weight is None else start_weight
-        self.end_weight.value = self._animal_coefficient_data.default_final_weight if end_weight is None else end_weight
-        self.maintenance_coefficient.value = self._animal_coefficient_data.baseline_maintenance_coefficient
-        self.gain_coefficient.value = self._animal_coefficient_data.gain_coefficient
+        """Retreives Table 16 livestock coefficients for beef cattle and dairy cattle."""
+        self._animal_coefficient_data = get_beef_and_dairy_cattle_coefficient_data(
+            animal_type=self.group_type
+        )
 
-        self.average_daily_gain.value = (self.end_weight.value - self.start_weight.value) / management_period_days
+        # --- Animal Coefficients ---
+        self.update_holos_var("maintenance_coefficient", self._animal_coefficient_data.baseline_maintenance_coefficient)
+        self.update_holos_var("gain_coefficient", self._animal_coefficient_data.gain_coefficient)
 
-        self.milk_production.value = milk_data.production
-        self.milk_fat_content.value = milk_data.fat_content
-        self.milk_protein_content_as_percentage.value = milk_data.protein_content_as_percentage
+        # --- Animal Weights & Growth ---
+        if self.start_weight is None:
+            self.start_weight = self._animal_coefficient_data.default_initial_weight
+        if self.end_weight is None:
+            self.end_weight = self._animal_coefficient_data.default_final_weight
+        if self.average_daily_gain is None:
+            self.average_daily_gain = (self.end_weight - self.start_weight) / self.management_period_days
 
-        self.diet_additive_type.value = diet_additive_type.value
+        # In case start_weight, end_weight and average_daily_gain are provided in holos_overrides
+        self.update_holos_var("start_weight", self.start_weight)
+        self.update_holos_var("end_weight", self.end_weight)
+        self.update_holos_var("average_daily_gain", self.average_daily_gain)
 
-        self.crude_protein.value = diet.crude_protein_percentage
-        self.forage.value = diet.forage_percentage
-        self.tdn.value = diet.total_digestible_nutrient_percentage
-        self.ash_content_of_diet.value = diet.ash_percentage
-        self.starch.value = diet.starch_percentage
-        self.fat.value = diet.fat_percentage
-        self.me.value = diet.metabolizable_energy
-        self.ndf.value = diet.neutral_detergent_fiber_percentage
+        # --- Milk Production ---
+        self.update_holos_var("milk_production", self.milk_data.production)
+        self.update_holos_var("milk_fat_content", self.milk_data.fat_content)
+        self.update_holos_var("milk_protein_content_as_percentage", self.milk_data.protein_content_as_percentage)
 
-        self.dietary_net_energy_concentration.value = diet.calc_dietary_net_energy_concentration_for_beef()
-        self.methane_conversion_factor_of_diet.value = diet.calc_methane_conversion_factor(animal_type=animal_type)
+        # --- Diet ---
+        self.update_holos_var("crude_protein", self.diet.crude_protein_percentage)
+        self.update_holos_var("forage", self.diet.forage_percentage)
+        self.update_holos_var("tdn", self.diet.total_digestible_nutrient_percentage)
+        self.update_holos_var("ash_content_of_diet", self.diet.ash_percentage)
+        self.update_holos_var("starch", self.diet.starch_percentage)
+        self.update_holos_var("fat", self.diet.fat_percentage)
+        self.update_holos_var("me", self.diet.metabolizable_energy)
+        self.update_holos_var("ndf", self.diet.neutral_detergent_fiber_percentage)
 
-        self.housing_type.value = housing_type.value
+        self.update_holos_var(
+            "dietary_net_energy_concentration",
+            self.diet.calc_dietary_net_energy_concentration_for_beef()
+        )
+        self.update_holos_var(
+            "methane_conversion_factor_of_diet",
+            self.diet.calc_methane_conversion_factor(animal_type=self.group_type)
+        )
 
+        # --- Bedding ---
         bedding = Bedding(
-            housing_type=housing_type,
-            bedding_material_type=bedding_material_type,
-            animal_type=animal_type)
+            housing_type=self.housing_type,
+            bedding_material_type=self.bedding_material_type,
+            animal_type=self.group_type
+        )
 
-        self.user_defined_bedding_rate.value = bedding.user_defined_bedding_rate.value
-        self.total_carbon_kilograms_dry_matter_for_bedding.value = bedding.total_carbon_kilograms_dry_matter_for_bedding.value
-        self.total_nitrogen_kilograms_dry_matter_for_bedding.value = bedding.total_nitrogen_kilograms_dry_matter_for_bedding.value
-        self.moisture_content_of_bedding_material.value = bedding.moisture_content_of_bedding_material.value
+        self.update_holos_var("user_defined_bedding_rate", bedding.user_defined_bedding_rate.value)
+        self.update_holos_var(
+            "total_carbon_kilograms_dry_matter_for_bedding",
+            bedding.total_carbon_kilograms_dry_matter_for_bedding.value
+        )
+        self.update_holos_var(
+            "total_nitrogen_kilograms_dry_matter_for_bedding",
+            bedding.total_nitrogen_kilograms_dry_matter_for_bedding.value
+        )
+        self.update_holos_var(
+            "moisture_content_of_bedding_material",
+            bedding.moisture_content_of_bedding_material.value
+        )
 
-        self.set_feeding_activity_coefficient()
+        # --- Feeding Activity ---
+        """Retreives coefficient related to feeding activity."""
+        self.update_holos_var(
+            "activity_coefficient_of_feeding_situation",
+            get_beef_and_dairy_cattle_feeding_activity_coefficient(housing_type=self.housing_type)
+        )
 
-        self.methane_producing_capacity_of_manure.value = get_default_methane_producing_capacity_of_manure(
-            is_pasture=housing_type.is_pasture(),
-            animal_type=animal_type)
-
-        self.methane_conversion_factor_of_manure.value = manure_emission_factors.MethaneConversionFactor
-        self.n2o_direct_emission_factor.value = manure_emission_factors.N2ODirectEmissionFactor
-        self.volatilization_fraction.value = manure_emission_factors.VolatilizationFraction
-        self.emission_factor_volatilization.value = manure_emission_factors.EmissionFactorVolatilization
-        self.fraction_leaching.value = manure_emission_factors.LeachingFraction
-        self.emission_factor_leaching.value = manure_emission_factors.EmissionFactorLeach
-
-        self.volatile_solid_adjusted.value = 1
-        self.nitrogen_excretion_adjusted.value = 1
-        self.gain_coefficient_a.value = 0
-        self.gain_coefficient_b.value = 0
-
+        # --- Manure ---
+        self.update_holos_var(
+            "methane_producing_capacity_of_manure",
+            get_default_methane_producing_capacity_of_manure(
+                is_pasture=self.housing_type.is_pasture(),
+                animal_type=self.group_type
+            )
+        )
         fraction_of_organic_nitrogen_mineralized_data = get_fraction_of_organic_nitrogen_mineralized_data(
-            state_type=manure_handling_system,
-            animal_type=animal_type)
+            state_type=self.manure_handling_system,
+            animal_type=self.group_type
+        )
 
-        self.manure_state_type.value = manure_handling_system.value
-        self.fraction_of_organic_nitrogen_immobilized.value = fraction_of_organic_nitrogen_mineralized_data.fraction_immobilized
-        self.fraction_of_organic_nitrogen_nitrified.value = fraction_of_organic_nitrogen_mineralized_data.fraction_nitrified
-        self.fraction_of_organic_nitrogen_mineralized.value = fraction_of_organic_nitrogen_mineralized_data.fraction_mineralized
-
-        self.ammonia_emission_factor_for_manure_storage.value = (
+        self.update_holos_var("manure_state_type", self.manure_handling_system)
+        self.update_holos_var(
+            "fraction_of_organic_nitrogen_immobilized",
+            fraction_of_organic_nitrogen_mineralized_data.fraction_immobilized
+        )
+        self.update_holos_var(
+            "fraction_of_organic_nitrogen_nitrified",
+            fraction_of_organic_nitrogen_mineralized_data.fraction_nitrified
+        )
+        self.update_holos_var(
+            "fraction_of_organic_nitrogen_mineralized",
+            fraction_of_organic_nitrogen_mineralized_data.fraction_mineralized
+        )
+        self.update_holos_var(
+            "ammonia_emission_factor_for_manure_storage",
             get_ammonia_emission_factor_for_storage_of_beef_and_dairy_cattle_manure(
-                storage_type=manure_handling_system))
+                storage_type=self.manure_handling_system
+            )
+        )
+
+        self.update_holos_var("indoor_barn_temperature", "N/A")
+        self.update_holos_var(
+            "use_custom_indoor_housing_temperature",
+            False if self.indoor_barn_temperature == "N/A" else True
+        )
+
+        self.update_holos_var(
+            "methane_conversion_factor_of_manure",
+            self.manure_emission_factors.MethaneConversionFactor
+        )
+        self.update_holos_var(
+            "n2o_direct_emission_factor",
+            self.manure_emission_factors.N2ODirectEmissionFactor
+        )
+        self.update_holos_var(
+            "volatilization_fraction",
+            self.manure_emission_factors.VolatilizationFraction
+        )
+        self.update_holos_var(
+            "emission_factor_volatilization",
+            self.manure_emission_factors.EmissionFactorVolatilization
+        )
+        self.update_holos_var(
+            "fraction_leaching",
+            self.manure_emission_factors.LeachingFraction
+        )
+        self.update_holos_var(
+            "emission_factor_leaching",
+            self.manure_emission_factors.EmissionFactorLeach
+        )
+
+        self.update_holos_var("volatile_solid_adjusted", 1)
+        self.update_holos_var("nitrogen_excretion_adjusted", 1)
+        self.update_holos_var("gain_coefficient_a", 0)
+        self.update_holos_var("gain_coefficient_b", 0)
+        for var_name, value in self.holos_overrides.items():
+            setattr(self, var_name, value)
+        self._fix_holos_vars()
 
 
 class DairyHeifers(Dairy):
     animal_group = GroupNameType.dairy_heifers.value
 
-    def __init__(
-            self,
-            management_period_name: str,
-            group_pairing_number: int,
-            management_period_start_date: date,
-            management_period_days: int,
-            number_of_animals: int,
-            production_stage: ProductionStage,
-            number_of_young_animals: int,
-            milk_data: Milk,
-            diet: Diet,
-            housing_type: HousingType,
-            manure_handling_system: ManureStateType,
-            manure_emission_factors: LivestockEmissionConversionFactorsData,
-            start_weight: float = None,
-            end_weight: float = None,
-            diet_additive_type: DietAdditiveType = DietAdditiveType.NONE,
-            bedding_material_type: BeddingMaterialType = BeddingMaterialType.NONE,
-    ):
-        super().__init__(
-            group_name=self.animal_group.name,
-            animal_type=self.animal_group.type,
-            **get_local_args(locals())
-        )
-
 
 class DairyLactatingCow(Dairy):
     animal_group = GroupNameType.dairy_lactating_cow.value
-
-    def __init__(
-            self,
-            management_period_name: str,
-            group_pairing_number: int,
-            management_period_start_date: date,
-            management_period_days: int,
-            number_of_animals: int,
-            production_stage: ProductionStage,
-            number_of_young_animals: int,
-            milk_data: Milk,
-            diet: Diet,
-            housing_type: HousingType,
-            manure_handling_system: ManureStateType,
-            manure_emission_factors: LivestockEmissionConversionFactorsData,
-            start_weight: float = None,
-            end_weight: float = None,
-            diet_additive_type: DietAdditiveType = DietAdditiveType.NONE,
-            bedding_material_type: BeddingMaterialType = BeddingMaterialType.NONE,
-    ):
-        super().__init__(
-            group_name=self.animal_group.name,
-            animal_type=self.animal_group.type,
-            **get_local_args(locals())
-        )
 
 
 class DairyCalves(Dairy):
     animal_group = GroupNameType.dairy_calves.value
 
-    def __init__(
-            self,
-            management_period_name: str,
-            group_pairing_number: int,
-            management_period_start_date: date,
-            management_period_days: int,
-            number_of_animals: int,
-            production_stage: ProductionStage,
-            number_of_young_animals: int,
-            milk_data: Milk,
-            diet: Diet,
-            housing_type: HousingType,
-            manure_handling_system: ManureStateType,
-            manure_emission_factors: LivestockEmissionConversionFactorsData,
-            start_weight: float = None,
-            end_weight: float = None,
-            diet_additive_type: DietAdditiveType = DietAdditiveType.NONE,
-            bedding_material_type: BeddingMaterialType = BeddingMaterialType.NONE,
-    ):
-        super().__init__(
-            group_name=self.animal_group.name,
-            animal_type=self.animal_group.type,
-            **get_local_args(locals())
-        )
-
 
 class DairyDryCow(Dairy):
     animal_group = GroupNameType.dairy_dry_cow.value
 
-    def __init__(
-            self,
-            management_period_name: str,
-            group_pairing_number: int,
-            management_period_start_date: date,
-            management_period_days: int,
-            number_of_animals: int,
-            production_stage: ProductionStage,
-            number_of_young_animals: int,
-            milk_data: Milk,
-            diet: Diet,
-            housing_type: HousingType,
-            manure_handling_system: ManureStateType,
-            manure_emission_factors: LivestockEmissionConversionFactorsData,
-            start_weight: float = None,
-            end_weight: float = None,
-            diet_additive_type: DietAdditiveType = DietAdditiveType.NONE,
-            bedding_material_type: BeddingMaterialType = BeddingMaterialType.NONE,
-    ):
-        super().__init__(
-            group_name=self.animal_group.name,
-            animal_type=self.animal_group.type,
-            **get_local_args(locals())
-        )
+
+class DairyBulls(Dairy):
+    animal_group = GroupNameType.dairy_bulls.value

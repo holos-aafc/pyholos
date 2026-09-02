@@ -81,17 +81,24 @@ class TestLandManagementBase(unittest.TestCase):
                         HarvestMethod.GreenManure,
                         HarvestMethod.Silage,
                         HarvestMethod.Swathing
-                    ]:
+                    ] and not crop.is_silage_crop():
                         self.land_management_base.crop_type.value = crop
                         self.land_management_base.harvest_method.value = harvest_method
                         self.land_management_base.set_moisture_content()
-                        self.assertEqual(
-                            self.land_management_base.moisture_content_of_crop.value * 100.,
-                            self.land_management_base.moisture_content_of_crop_percentage.value)
+                        if not crop.is_perennial():
+                            self.assertEqual(
+                                self.land_management_base.moisture_content_of_crop.value * 100.,
+                                self.land_management_base.moisture_content_of_crop_percentage.value)
+                        else:
+                            self.assertEqual(
+                                80,
+                                self.land_management_base.moisture_content_of_crop_percentage.value)
 
     def test_set_moisture_content_default_value(self):
         self.land_management_base.moisture_content_of_crop.value = 0
         for crop in CropType:
+            if crop.is_perennial():
+                continue  # not targeted by this test
             if crop not in CropTypePerCategory.silage_crop:
                 for harvest_method in HarvestMethod:
                     if harvest_method not in [

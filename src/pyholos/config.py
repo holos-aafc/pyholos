@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import zipfile
 from os import environ
 from pathlib import Path

@@ -1,32 +1,21 @@
 import unittest
 from datetime import date
 from pathlib import Path
+import numpy as np
 
 from pyholos.common2 import CanadianProvince
-from pyholos.components.animals import beef, common
+from pyholos.components.animals import common, beef
 from pyholos.soil import SoilTexture
 from pyholos.utils import read_holos_resource_table
 
 
-class TestBeef(unittest.TestCase):
-    def setUp(self):
-        self.beef = beef.BeefBase()
-
-    def test_update_name(self):
-        old_name = self.beef.name.value
-        new_name = 'test_name'
-        self.beef.update_name(name=new_name)
-        self.assertEqual(
-            ' '.join((old_name, new_name)),
-            self.beef.name.value)
-
-    def test_update_component_type(self):
-        old_name = self.beef.component_type.value
-        new_name = 'test_name'
-        self.beef.update_component_type(component_type=new_name)
-        self.assertEqual(
-            '.'.join((old_name, new_name)),
-            self.beef.component_type.value)
+def are_real_numbers(*x) -> bool:
+    for x_i in x:
+        is_real_number = isinstance(x_i, (int, float, np.integer, np.floating))
+        is_boolean = isinstance(x_i, (bool, np.bool_))
+        if not (is_real_number and not is_boolean):
+            return False
+    return True
 
 
 class TestBeefCowCalfNonRegression(unittest.TestCase):
@@ -57,7 +46,7 @@ class TestBeefCowCalfNonRegression(unittest.TestCase):
         for k, v in self.non_regression_data.loc[group_name].to_dict().items():
             actual = res[k]
 
-            if all([isinstance(v, (int, float)), isinstance(actual, (int, float))]):
+            if are_real_numbers(v, actual):
                 self.assertAlmostEqual(
                     v,
                     res[k],
@@ -247,7 +236,7 @@ class TestBeefFinisherNonRegression(unittest.TestCase):
         for k, v in self.non_regression_data.loc[group_name].to_dict().items():
             actual = res[k]
 
-            if all([isinstance(v, (int, float)), isinstance(actual, (int, float))]):
+            if are_real_numbers(v, actual):
                 self.assertAlmostEqual(
                     v,
                     res[k],
@@ -362,7 +351,7 @@ class TestBeefBackgrounderNonRegression(unittest.TestCase):
         for k, v in self.non_regression_data.loc[group_name].to_dict().items():
             actual = res[k]
 
-            if all([isinstance(v, (int, float)), isinstance(actual, (int, float))]):
+            if are_real_numbers(v, actual):
                 self.assertAlmostEqual(
                     v,
                     res[k],

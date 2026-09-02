@@ -1,130 +1,254 @@
+from __future__ import annotations
+
 from datetime import date
-from typing import ClassVar, Generator, Union
+from abc import ABC, abstractmethod
+from typing import ClassVar, Generator, Type, Optional, Annotated, Mapping, Any
+from functools import partial
 from uuid import UUID, uuid4
 
-from pydantic import (BaseModel, Field, NonNegativeFloat, NonNegativeInt,
-                      PositiveFloat, PositiveInt, confloat, conint, conlist,
-                      field_validator)
+from pydantic import (
+    BaseModel,
+    Field,
+    NonNegativeFloat,
+    NonNegativeInt,
+    PositiveFloat,
+    PositiveInt,
+    field_validator
+)
 
 from pyholos.common2 import CanadianProvince
 from pyholos.components.animals import beef, dairy, sheep
-from pyholos.components.animals.common import (BeddingMaterialType, Diet,
-                                               DietAdditiveType, HousingType,
-                                               ManureAnimalSourceTypes,
-                                               ManureLocationSourceType,
-                                               ManureStateType, Milk,
-                                               ProductionStage,
-                                               get_manure_emission_factors)
+from pyholos.components.animals.common import (
+    BeddingMaterialType,
+    Diet,
+    DietAdditiveType,
+    HousingType,
+    ManureAnimalSourceTypes,
+    ManureLocationSourceType,
+    ManureStateType,
+    Milk,
+    ProductionStage,
+    get_manure_emission_factors
+)
 from pyholos.components.land_management.carbon.relative_biomass_information import (
-    RelativeBiomassInformationData, get_relative_biomass_information_data,
-    parse_table_7)
+    RelativeBiomassInformationData,
+    get_relative_biomass_information_data,
+    parse_table_7
+)
 from pyholos.components.land_management.common import (
-    FertilizerApplicationMethodologies, FertilizerBlends, HarvestMethod,
-    IrrigationType, ManureApplicationTypes, TillageType)
+    FertilizerApplicationMethodologies,
+    FertilizerBlends,
+    HarvestMethod,
+    IrrigationType,
+    ManureApplicationTypes,
+    TillageType
+)
 from pyholos.components.land_management.crop import CropType
 from pyholos.components.land_management.field_system import CropViewItem
 from pyholos.core_constants import CoreConstants
 from pyholos.soil import SoilFunctionalCategory, SoilTexture
 from pyholos.utils import concat_lists
 
-AnimalComponent = Union[
-    beef.Bulls, beef.ReplacementHeifers, beef.Cows, beef.Calves,
-    beef.FinishingHeifers, beef.FinishingSteers,
-    beef.BackgrounderHeifer, beef.BackgrounderSteer,
-    dairy.DairyHeifers, dairy.DairyLactatingCow, dairy.DairyCalves, dairy.DairyDryCow,
-    sheep.SheepFeedlot, sheep.Rams, sheep.Ewes, sheep.Lambs
-]
-type ManagementPeriods = list[BeefManagementPeriod | DairyManagementPeriod | SheepManagementPeriod]
+# BeefCattleComponent is a subset of AnimalComponent
+type BeefCattleComponent = (
+    beef.Bulls
+    | beef.ReplacementHeifers
+    | beef.Cows
+    | beef.Calves
+    | beef.FinishingHeifers
+    | beef.FinishingSteers
+    | beef.BackgrounderHeifer
+    | beef.BackgrounderSteer
+)
+# DaryCattleComponent is a subset of AnimalComponent
+type DairyCattleComponent = (
+    dairy.DairyHeifers
+    | dairy.DairyLactatingCow
+    | dairy.DairyCalves
+    | dairy.DairyDryCow
+    | dairy.DairyBulls
+)
+# SheepFlockComponent is a subset of AnimalComponent
+type SheepFlockComponent = (
+    sheep.SheepFeedlot
+    | sheep.Rams
+    | sheep.Ewes
+    | sheep.Lambs
+)
 
-TypeWaterData = confloat(strict=True, ge=0, allow_inf_nan=False)
-TypeTemperatureData = confloat(strict=True, allow_inf_nan=False)
+type AnimalComponent = (
+    BeefCattleComponent
+    | DairyCattleComponent
+    | SheepFlockComponent
+)
+
+type ManagementPeriod = (
+    BeefManagementPeriod
+    | DairyManagementPeriod
+    | SheepManagementPeriod
+)
+
+type ManagementPeriods = list[ManagementPeriod]
+
+type TypeWaterData = Annotated[float, Field(strict=True, ge=0, allow_inf_nan=False)]
+type TypeTemperatureData = Annotated[float, Field(strict=True, allow_inf_nan=False)]
 
 
+# region Weather Inputs
 class WeatherData(BaseModel):
     """A class that holds daily values for precipitation (mm), potential_evapotranspiration (mm) and temperature (°C)
     for one year.
     """
-    spec_daily_data: ClassVar = dict(min_length=365, max_length=366)
+    SpecDailyData = partial(Field, min_length=365, max_length=366)
 
-    year: int = Field(gt=CoreConstants.MinimumYear)
-    precipitation: conlist(item_type=TypeWaterData, **spec_daily_data)
-    potential_evapotranspiration: conlist(item_type=TypeWaterData, **spec_daily_data)
-    temperature: conlist(item_type=TypeTemperatureData, **spec_daily_data)
+    year: Annotated[int, Field(gt=CoreConstants.MinimumYear)]
+    precipitation: Annotated[list[TypeWaterData], SpecDailyData()]
+    potential_evapotranspiration: Annotated[list[TypeWaterData], SpecDailyData()]
+    temperature: Annotated[list[TypeTemperatureData], SpecDailyData()]
 
 
 class WeatherSummary(BaseModel):
-    spec_monthly_data: ClassVar = dict(min_length=12, max_length=12)
-
-    year: int = Field(gt=1970)
+    SpecMonthlyData = partial(Field, min_length=12, max_length=12)
+    year: Annotated[int, Field(gt=1970)]
     mean_annual_precipitation: TypeWaterData
     mean_annual_temperature: TypeTemperatureData
     mean_annual_evapotranspiration: TypeWaterData
     growing_season_precipitation: TypeWaterData
     growing_season_evapotranspiration: TypeWaterData
-    monthly_precipitation: conlist(item_type=TypeWaterData, **spec_monthly_data)
-    monthly_potential_evapotranspiration: conlist(item_type=TypeWaterData, **spec_monthly_data)
-    monthly_temperature: conlist(item_type=TypeTemperatureData, **spec_monthly_data)
+    monthly_precipitation: Annotated[list[TypeWaterData], SpecMonthlyData()]
+    monthly_potential_evapotranspiration: Annotated[list[TypeWaterData], SpecMonthlyData()]
+    monthly_temperature: Annotated[list[TypeTemperatureData], SpecMonthlyData()]
 
 
+# region Management Periods
 class BeefManagementPeriod(BaseModel):
-    name: str = Field(min_length=1)
+    """
+    Base input class for beef cattle management periods.
+
+    Note:
+        No validation is performed on the consistency between:
+
+        - start_weight
+        - end_weight
+        - average_daily_gain
+        - days
+
+        These values may be specified independently to support advanced
+        modelling workflows. It is therefore the responsibility of the
+        caller to ensure that the provided values are appropriate for the
+        intended use case.
+    """
+
+    name: Annotated[str, Field(min_length=1)]
     start_date: date
-    days: conint(gt=0)
-    group_pairing_number: conint(ge=0)
-    number_of_animals: conint(ge=0)
+    days: Annotated[int, Field(gt=0)]
+    group_pairing_number: Annotated[int, Field(ge=0)]
+    number_of_animals: Annotated[int, Field(ge=0)]
     production_stage: ProductionStage
-    number_of_young_animals: conint(ge=0)
+    number_of_young_animals: Annotated[int, Field(ge=0)]
     is_milk_fed_only: bool
     diet_name: str
     diet: Diet
     housing_type: HousingType
     manure_handling_system: ManureStateType
     weather_summary: WeatherSummary
-    start_weight: confloat(ge=0, allow_inf_nan=False) = None
-    end_weight: confloat(ge=0, allow_inf_nan=False) = None
+    start_weight: Optional[Annotated[float, Field(ge=0, allow_inf_nan=False)]] = None
+    end_weight: Optional[Annotated[float, Field(ge=0, allow_inf_nan=False)]] = None
+    average_daily_gain: Optional[Annotated[float, Field(ge=0, allow_inf_nan=False)]] = None
     diet_additive_type: DietAdditiveType = DietAdditiveType.NONE
     bedding_material_type: BeddingMaterialType = BeddingMaterialType.straw
     pasture_location: UUID | None = None
 
 
 class DairyManagementPeriod(BaseModel):
-    name: str = Field(min_length=1)
+    """
+    Base input class for dairy cattle management periods.
+
+    Note1:
+        No validation is performed on the consistency between:
+
+        - start_weight
+        - end_weight
+        - average_daily_gain
+        - days
+
+        These values may be specified independently to support advanced
+        modelling workflows. It is therefore the responsibility of the
+        caller to ensure that the provided values are appropriate for the
+        intended use case.
+
+    Note2:
+        number_of_animals is currently defined as a float to support
+        advanced modelling workflows.
+
+        However, Holos V4 currently expects an integer value for the number of animals.
+        As a result, exporting fractional animal counts may produce CSV files
+        that are rejected by Holos CLI.
+    """
+    # --- Structural Inputs, cannot be automatically generated ---
+    name: Annotated[str, Field(min_length=1)]
     start_date: date
-    days: conint(gt=0)
-    group_pairing_number: conint(ge=0)
-    number_of_animals: conint(ge=0)
+    days: Annotated[int, Field(gt=0)]
+    group_pairing_number: Annotated[int, Field(ge=0)]
+    number_of_animals: Annotated[float, Field(ge=0)]  # We need float to modelise average number of animals
     production_stage: ProductionStage
-    number_of_young_animals: conint(ge=0)
+    number_of_young_animals: Annotated[int, Field(ge=0)]
     milk_data: Milk
     diet: Diet
     housing_type: HousingType
     manure_handling_system: ManureStateType
     weather_summary: WeatherSummary
-    start_weight: confloat(ge=0, allow_inf_nan=False) = None
-    end_weight: confloat(ge=0, allow_inf_nan=False) = None
+    start_weight: Optional[Annotated[float, Field(ge=0, allow_inf_nan=False)]] = None
+    end_weight: Optional[Annotated[float, Field(ge=0, allow_inf_nan=False)]] = None
+    average_daily_gain: Optional[Annotated[float, Field(ge=0, allow_inf_nan=False)]] = None
     diet_additive_type: DietAdditiveType = DietAdditiveType.NONE
     bedding_material_type: BeddingMaterialType = BeddingMaterialType.straw
 
+    # --- Overrides Inputs that can be automatically generated ---
+    holos_overrides: Mapping[str, Any] = Field(default_factory=dict)
+
+    @field_validator("holos_overrides", mode="before")
+    def validate_holos_overrides(cls, value):
+        # Indoor Barn Temperature
+        key_ = "indoor_barn_temperature"
+        if key_ not in value:
+            return value
+        if value[key_] in (None, "", "N/A"):
+            value[key_] = "N/A"
+            return value
+        try:
+            float_val = float(value[key_])
+            if not (-50 <= float_val <= 50):
+                raise ValueError("Temperature must be between -50 and 50.")
+            value[key_] = float_val
+            return value
+        except (TypeError, ValueError):
+            raise ValueError("indoor_barn_temperature must be a float or 'N/A'")
+
 
 class SheepManagementPeriod(BaseModel):
-    name: str = Field(min_length=1)
+    name: Annotated[str, Field(min_length=1)]
     start_date: date
-    days: conint(gt=0)
-    group_pairing_number: conint(ge=0)
-    number_of_animals: conint(ge=0)
+    days: Annotated[int, Field(gt=0)]
+    group_pairing_number: Annotated[int, Field(ge=0)]
+    number_of_animals: Annotated[int, Field(ge=0)]
     production_stage: ProductionStage
-    number_of_young_animals: conint(ge=0)
+    number_of_young_animals: Annotated[int, Field(ge=0)]
     diet: Diet
     housing_type: HousingType
     manure_handling_system: ManureStateType
     weather_summary: WeatherSummary
-    start_weight: confloat(ge=0, allow_inf_nan=False) = None
-    end_weight: confloat(ge=0, allow_inf_nan=False) = None
+    start_weight: Optional[Annotated[float, Field(ge=0, allow_inf_nan=False)]] = None
+    end_weight: Optional[Annotated[float, Field(ge=0, allow_inf_nan=False)]] = None
+    average_daily_gain: Optional[Annotated[float, Field(ge=0, allow_inf_nan=False)]] = None
     diet_additive_type: DietAdditiveType = DietAdditiveType.NONE
     bedding_material_type: BeddingMaterialType = BeddingMaterialType.straw
 
 
-class AnimalInputBase(BaseModel):
+# region Animal Inputs
+class AnimalInputBase[
+    TComponent: AnimalComponent, TPeriod: ManagementPeriod
+](BaseModel, ABC):
     def __iter__(self):
         for k, v in self.__dict__.items():
             if v is not None:
@@ -141,22 +265,30 @@ class AnimalInputBase(BaseModel):
                 res.append(animal_data)
         return res
 
+    @abstractmethod
     def filter_inputs(self) -> list[list[str]]:
         pass
 
     @staticmethod
-    def map_component(**kwargs):
+    @abstractmethod
+    def map_component(component_name: str) -> Type[TComponent]:
         pass
 
     @staticmethod
-    def _create_component(**kwargs):
+    @abstractmethod
+    def _create_component(
+        province: CanadianProvince,
+        soil_texture: SoilTexture,
+        component_class: Type[TComponent],
+        management_period: TPeriod
+    ) -> TComponent:
         pass
 
     def create_components(
             self,
             province: CanadianProvince,
             soil_texture: SoilTexture,
-    ) -> list[list[AnimalComponent]]:
+    ) -> list[list[TComponent]]:
         res = []
         for non_empty_entry in self.filter_inputs():
             animal_components = []
@@ -175,25 +307,16 @@ class AnimalInputBase(BaseModel):
         return res
 
 
+# region Beef Inputs
 class BeefCattleInput(AnimalInputBase):
-    Bulls: ManagementPeriods = None
-    ReplacementHeifers: ManagementPeriods = None
-    Cows: ManagementPeriods = None
-    Calves: ManagementPeriods = None
-    FinishingHeifers: ManagementPeriods = None
-    FinishingSteers: ManagementPeriods = None
-    BackgrounderHeifer: ManagementPeriods = None
-    BackgrounderSteer: ManagementPeriods = None
-
-    component_types: ClassVar = Union[
-        beef.Bulls,
-        beef.ReplacementHeifers,
-        beef.Cows,
-        beef.Calves,
-        beef.FinishingHeifers,
-        beef.FinishingSteers,
-        beef.BackgrounderHeifer,
-        beef.BackgrounderSteer]
+    Bulls: list[BeefManagementPeriod] | None = None
+    ReplacementHeifers: list[BeefManagementPeriod] | None = None
+    Cows: list[BeefManagementPeriod] | None = None
+    Calves: list[BeefManagementPeriod] | None = None
+    FinishingHeifers: list[BeefManagementPeriod] | None = None
+    FinishingSteers: list[BeefManagementPeriod] | None = None
+    BackgrounderHeifer: list[BeefManagementPeriod] | None = None
+    BackgrounderSteer: list[BeefManagementPeriod] | None = None
 
     def filter_inputs(self) -> list[list[str]]:
         return self._filter_inputs(animal_groups=[
@@ -205,7 +328,7 @@ class BeefCattleInput(AnimalInputBase):
     @staticmethod
     def map_component(
             component_name: str
-    ) -> component_types:
+    ) -> Type[BeefCattleComponent]:
 
         match component_name:
             case 'Bulls':
@@ -233,9 +356,9 @@ class BeefCattleInput(AnimalInputBase):
     def _create_component(
             province: CanadianProvince,
             soil_texture: SoilTexture,
-            component_class: [component_types],
+            component_class: Type[BeefCattleComponent],
             management_period: BeefManagementPeriod
-    ) -> component_types:
+    ) -> BeefCattleComponent:
         return component_class(
             management_period_name=management_period.name,
             management_period_start_date=management_period.start_date,
@@ -251,81 +374,76 @@ class BeefCattleInput(AnimalInputBase):
             housing_type=management_period.housing_type,
             manure_handling_system=management_period.manure_handling_system,
             manure_emission_factors=get_manure_emission_factors(
-                animal_type=component_class.animal_type,
-                year=management_period.weather_summary.year,
                 manure_state_type=management_period.manure_handling_system,
                 mean_annual_precipitation=management_period.weather_summary.mean_annual_precipitation,
                 mean_annual_temperature=management_period.weather_summary.mean_annual_temperature,
                 mean_annual_evapotranspiration=management_period.weather_summary.mean_annual_evapotranspiration,
                 growing_season_precipitation=management_period.weather_summary.growing_season_precipitation,
                 growing_season_evapotranspiration=management_period.weather_summary.growing_season_evapotranspiration,
+                animal_type=component_class.animal_group.group_type,
                 province=province,
+                year=management_period.weather_summary.year,
                 soil_texture=soil_texture),
             start_weight=management_period.start_weight,
             end_weight=management_period.end_weight,
+            average_daily_gain=management_period.average_daily_gain,
             diet_additive_type=management_period.diet_additive_type,
             bedding_material_type=management_period.bedding_material_type,
             pasture_location=management_period.pasture_location,
         )
 
 
+# region Dairy Inputs
 class DairyCattleInput(AnimalInputBase):
-    Heifers: ManagementPeriods = None
-    LactatingCow: ManagementPeriods = None
-    Calves: ManagementPeriods = None
-    DryCow: ManagementPeriods = None
-
-    component_types: ClassVar = Union[
-        dairy.DairyHeifers,
-        dairy.DairyLactatingCow,
-        dairy.DairyCalves,
-        dairy.DairyDryCow]
+    Heifers: list[DairyManagementPeriod] | None = None
+    LactatingCow: list[DairyManagementPeriod] | None = None
+    Calves: list[DairyManagementPeriod] | None = None
+    DryCow: list[DairyManagementPeriod] | None = None
+    DairyBulls: list[DairyManagementPeriod] | None = None
 
     @staticmethod
     def map_component(
             component_name: str
-    ) -> component_types:
+    ) -> Type[DairyCattleComponent]:
 
         match component_name:
             case 'Heifers':
-                res = dairy.DairyHeifers
+                return dairy.DairyHeifers
             case 'LactatingCow':
-                res = dairy.DairyLactatingCow
+                return dairy.DairyLactatingCow
             case 'Calves':
-                res = dairy.DairyCalves
+                return dairy.DairyCalves
             case 'DryCow':
-                res = dairy.DairyDryCow
+                return dairy.DairyDryCow
+            case 'DairyBulls':
+                return dairy.DairyBulls
             case _:
                 raise ValueError(f'Unrecognized component name "({component_name})."')
 
-        return res
-
     def filter_inputs(self) -> list[list[str]]:
         return self._filter_inputs(animal_groups=[
-            ["Heifers", "LactatingCow", "Calves", "DryCow"]
+            ["Heifers", "LactatingCow", "Calves", "DryCow", "DairyBulls"],
         ])
 
     @staticmethod
     def _create_component(
             province: CanadianProvince,
             soil_texture: SoilTexture,
-            component_class: [component_types],
+            component_class: Type[DairyCattleComponent],
             management_period: DairyManagementPeriod
-    ) -> component_types:
-        return component_class(
+    ) -> DairyCattleComponent:
+        component = component_class(
             management_period_name=management_period.name,
+            group_pairing_number=management_period.group_pairing_number,
             management_period_start_date=management_period.start_date,
             management_period_days=management_period.days,
-            group_pairing_number=management_period.group_pairing_number,
             number_of_animals=management_period.number_of_animals,
             production_stage=management_period.production_stage,
             number_of_young_animals=management_period.number_of_young_animals,
-            milk_data=Milk(),
+            milk_data=management_period.milk_data,
             diet=management_period.diet,
             housing_type=management_period.housing_type,
             manure_handling_system=management_period.manure_handling_system,
-            diet_additive_type=management_period.diet_additive_type,
-            bedding_material_type=management_period.bedding_material_type,
 
             manure_emission_factors=get_manure_emission_factors(
                 manure_state_type=management_period.manure_handling_system,
@@ -334,33 +452,36 @@ class DairyCattleInput(AnimalInputBase):
                 mean_annual_evapotranspiration=management_period.weather_summary.mean_annual_evapotranspiration,
                 growing_season_precipitation=management_period.weather_summary.growing_season_precipitation,
                 growing_season_evapotranspiration=management_period.weather_summary.growing_season_evapotranspiration,
-                animal_type=component_class.animal_group.type,
+                animal_type=component_class.animal_group.group_type,
                 province=province,
                 year=management_period.weather_summary.year,
-                soil_texture=soil_texture),
+                soil_texture=soil_texture
+            ),
 
             start_weight=management_period.start_weight,
             end_weight=management_period.end_weight,
+            average_daily_gain=management_period.average_daily_gain,
 
+            bedding_material_type=management_period.bedding_material_type,
+            diet_additive_type=management_period.diet_additive_type,
+
+            holos_overrides=management_period.holos_overrides
         )
 
+        return component
 
+
+# region Sheeps Inputs
 class SheepFlockInput(AnimalInputBase):
-    SheepFeedlot: ManagementPeriods = None
-    Rams: ManagementPeriods = None
-    Ewes: ManagementPeriods = None
-    Lambs: ManagementPeriods = None
-
-    component_types: ClassVar = Union[
-        sheep.SheepFeedlot,
-        sheep.Rams,
-        sheep.Ewes,
-        sheep.Lambs]
+    SheepFeedlot: list[SheepManagementPeriod] | None = None
+    Rams: list[SheepManagementPeriod] | None = None
+    Ewes: list[SheepManagementPeriod] | None = None
+    Lambs: list[SheepManagementPeriod] | None = None
 
     @staticmethod
     def map_component(
             component_name: str
-    ) -> component_types:
+    ) -> Type[SheepFlockComponent]:
 
         match component_name:
             case 'SheepFeedlot':
@@ -387,20 +508,23 @@ class SheepFlockInput(AnimalInputBase):
     def _create_component(
             province: CanadianProvince,
             soil_texture: SoilTexture,
-            component_class: [component_types],
+            component_class: Type[SheepFlockComponent],
             management_period: SheepManagementPeriod
-    ) -> component_types:
+    ) -> SheepFlockComponent:
         return component_class(
             management_period_name=management_period.name,
+            group_pairing_number=management_period.group_pairing_number,
             management_period_start_date=management_period.start_date,
             management_period_days=management_period.days,
-            group_pairing_number=management_period.group_pairing_number,
             number_of_animals=management_period.number_of_animals,
             production_stage=management_period.production_stage,
             number_of_young_animals=management_period.number_of_young_animals,
             diet=management_period.diet,
             housing_type=management_period.housing_type,
             manure_handling_system=management_period.manure_handling_system,
+            start_weight=management_period.start_weight,
+            end_weight=management_period.end_weight,
+            average_daily_gain=management_period.average_daily_gain,
             diet_additive_type=management_period.diet_additive_type,
             bedding_material_type=management_period.bedding_material_type,
 
@@ -414,14 +538,12 @@ class SheepFlockInput(AnimalInputBase):
                 animal_type=component_class.animal_type,
                 province=province,
                 year=management_period.weather_summary.year,
-                soil_texture=soil_texture),
-
-            start_weight=management_period.start_weight,
-            end_weight=management_period.end_weight,
-
+                soil_texture=soil_texture
+            ),
         )
 
 
+# region Fields Inputs
 class FieldAnnualData(BaseModel):
     name: str = Field(min_length=1)
     field_area: PositiveFloat
@@ -444,19 +566,37 @@ class FieldAnnualData(BaseModel):
     manure_state_type: ManureStateType = ManureStateType.not_selected
     manure_location_source_type: ManureLocationSourceType = ManureLocationSourceType.NotSelected
 
-    year_in_perennial_stand: int = None
-    field_system_component_guid: UUID = None
-    current_year: int = None
-    relative_biomass_information_data: RelativeBiomassInformationData = None
-    province: CanadianProvince = None
-    clay_content: float = None
-    sand_content: float = None
-    organic_carbon_percentage: float = None
-    soil_top_layer_thickness: float = None
-    soil_functional_category: SoilFunctionalCategory = None
-    evapotranspiration: list[float] = None
-    precipitation: list[float] = None
-    temperature: list[float] = None
+    year_in_perennial_stand: int | None = None
+
+    # Unique identifier for perennial stand. All years in the same stand must share this UUID.
+    field_system_component_guid: UUID | None = Field(
+        default=None,
+        description=(
+            "Unique identifier (UUID) for the perennial stand. "
+            "Used to group all years of a given stand together. "
+            "Each year within the same stand must share this same identifier. "
+            "If omitted or inconsistent, Holos will not correctly associate the years. "
+            "Corresponds to PerrenialStandID in HolosCLI CLI_Input_FIle_Example.md. "
+            "https://github.com/holos-aafc/Holos/blob/main/H.Content/Documentation/CLI%20Input%20File%20Example.  "
+            "Example: '00000000-0000-0000-0000-000000000000'."
+        ),
+        examples=["00000000-0000-0000-0000-000000000000"]
+    )
+
+    current_year: int | None = None
+    relative_biomass_information_data: RelativeBiomassInformationData | None = None
+    province: CanadianProvince | None = None
+    clay_content: float | None = None
+    sand_content: float | None = None
+    organic_carbon_percentage: float | None = None
+    soil_top_layer_thickness: float | None = None
+    soil_functional_category: SoilFunctionalCategory | None = None
+    evapotranspiration: list[float] | None = None
+    precipitation: list[float] | None = None
+    temperature: list[float] | None = None
+    moisture_content_of_crop: float | None = None
+    moisture_content_of_crop_percentage: float | None = None
+    fertilizer_application_method: FertilizerApplicationMethodologies = FertilizerApplicationMethodologies.NotSelected
 
     @field_validator('weather_data', mode='after')
     @classmethod
@@ -466,18 +606,21 @@ class FieldAnnualData(BaseModel):
 
 
 class FieldsInput(BaseModel):
-    fields: FieldAnnualData | list[FieldAnnualData] = None
+    """
+    Input for fields in HolosV4.
+    Takes in a single argument, a list of list of FieldAnnualData.
+    Every sublist represents a single field.
+    Every element in the sublist represents a single year for this field.
+    """
+    fields: list[list[FieldAnnualData]] | None = None
     table_7: ClassVar = parse_table_7()
 
     @property
-    def fields_data(self) -> Generator:
+    def fields_data(self) -> Generator[list[FieldAnnualData], None, None]:
         if self.fields is None:
-            return iter(())
-        else:
-            if not isinstance(self.fields, list):
-                self.fields = [self.fields]
-            for v in self.fields:
-                yield [v]
+            return
+        for field_data in self.fields:
+            yield field_data
 
     @staticmethod
     def calc_year_in_perennial_stand(
@@ -521,18 +664,18 @@ class FieldsInput(BaseModel):
         return res
 
     def _create_one_year_component(
-            self,
-            province: CanadianProvince,
-            clay_content: float,
-            sand_content: float,
-            organic_carbon_percentage: float,
-            soil_top_layer_thickness: float,
-            soil_functional_category: SoilFunctionalCategory,
-            perennial_stand_id: UUID,
-            field_system_component_guid: UUID,
-            perennial_stand_length: int,
-            field_one_year_data: FieldAnnualData,
-            year_in_perennial_stand: int,
+        self,
+        province: CanadianProvince,
+        clay_content: float,
+        sand_content: float,
+        organic_carbon_percentage: float,
+        soil_top_layer_thickness: float,
+        soil_functional_category: SoilFunctionalCategory,
+        perennial_stand_id: UUID,
+        field_system_component_guid: UUID,
+        perennial_stand_length: int,
+        field_one_year_data: FieldAnnualData,
+        year_in_perennial_stand: int,
     ) -> CropViewItem:
         weather_data = field_one_year_data.weather_data
 
@@ -575,7 +718,9 @@ class FieldsInput(BaseModel):
             manure_application_type=field_one_year_data.manure_application_type,
             manure_animal_source_type=field_one_year_data.manure_animal_source_type,
             manure_state_type=field_one_year_data.manure_state_type,
-            manure_location_source_type=field_one_year_data.manure_location_source_type
+            manure_location_source_type=field_one_year_data.manure_location_source_type,
+            moisture_content_of_crop=field_one_year_data.moisture_content_of_crop,
+            moisture_content_of_crop_percentage=field_one_year_data.moisture_content_of_crop_percentage,
         )
 
     def _create_field_component(

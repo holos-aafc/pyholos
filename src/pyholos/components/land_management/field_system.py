@@ -2,24 +2,31 @@ from uuid import UUID
 
 from pyholos.common import Component, HolosVar
 from pyholos.common2 import CanadianProvince
-from pyholos.components.animals.common import (ManureAnimalSourceTypes,
-                                               ManureLocationSourceType,
-                                               ManureStateType)
-from pyholos.components.land_management.carbon.climate import \
-    calculate_climate_parameter
-from pyholos.components.land_management.carbon.management import \
-    calculate_management_factor
+from pyholos.components.animals.common import (
+    ManureAnimalSourceTypes,
+    ManureLocationSourceType,
+    ManureStateType,
+)
+from pyholos.components.land_management.carbon.climate import calculate_climate_parameter
+from pyholos.components.land_management.carbon.management import calculate_management_factor
 from pyholos.components.land_management.carbon.relative_biomass_information import (
-    RelativeBiomassInformationData, get_nitrogen_lignin_content_in_crops_data,
-    parse_table_9)
-from pyholos.components.land_management.carbon.tillage import \
-    calculate_tillage_factor
+    RelativeBiomassInformationData,
+    get_nitrogen_lignin_content_in_crops_data,
+    parse_table_9,
+)
+from pyholos.components.land_management.carbon.tillage import calculate_tillage_factor
 from pyholos.components.land_management.common import (
-    FertilizerApplicationMethodologies, FertilizerBlends, HarvestMethod,
-    IrrigationType, ManureApplicationTypes, TillageType, TimePeriodCategory,
-    get_fuel_energy_estimate, get_herbicide_energy_estimate)
-from pyholos.components.land_management.crop import (CropType,
-                                                     get_nitrogen_fixation)
+    FertilizerApplicationMethodologies,
+    FertilizerBlends,
+    HarvestMethod,
+    IrrigationType,
+    ManureApplicationTypes,
+    TillageType,
+    TimePeriodCategory,
+    get_fuel_energy_estimate,
+    get_herbicide_energy_estimate,
+)
+from pyholos.components.land_management.crop import CropType, get_nitrogen_fixation
 from pyholos.core_constants import CoreConstants
 from pyholos.defaults import Defaults
 from pyholos.soil import SoilFunctionalCategory
@@ -158,7 +165,7 @@ class LandManagementBase(Component):
         self.fuel_energy = HolosVar(name='Fuel Energy')
         self.herbicide_energy = HolosVar(name='Herbicide Energy')
         self.fertilizer_blend = HolosVar(name='Fertilizer Blend')
-        self.fertilizer_application_method = HolosVar(name='Fertilizer Application Method')
+        self.fertilizer_application_method = HolosVar(name='Fertilizer Application Method', value="N/A")
 
     def get_default_harvest_method(self) -> HarvestMethod:
         """Returns default harvest method based on the cultivated crop.
@@ -177,20 +184,28 @@ class LandManagementBase(Component):
         Holos source code:
             https://github.com/holos-aafc/Holos/blob/23a53f1fe6796145cc3ac43c005dbcc560421deb/H.Core/Models/LandManagement/Fields/CropViewItem.cs#L1289
         """
-        self.irrigation_type.value = IrrigationType.Irrigated if self.amount_of_irrigation.value > 0 else IrrigationType.RainFed
+        self.irrigation_type.value = (
+            IrrigationType.Irrigated
+            if self.amount_of_irrigation.value > 0
+            else IrrigationType.RainFed
+        )
 
     def set_moisture_content(self):
+        """Sets the moisture percentage of the harvested biomass.
+
+        Holos source code:
+            https://github.com/holos-aafc/Holos/blob/a2978b700cb15a1284abc4856a4eefd3aabac905/H.Core/Services/Initialization/Crops/CropInitializationService.Water.cs#L60
+        """
+        if self.crop_type.value.is_perennial():
+            self.moisture_content_of_crop_percentage.value = 80
+            return
+
         if any([
             self.harvest_method == HarvestMethod.GreenManure,
             self.harvest_method == HarvestMethod.Silage,
             self.harvest_method == HarvestMethod.Swathing,
             self.crop_type.value.is_silage_crop()
         ]):
-            """Sets the moisture percentage of the harvested biomass.
-            
-            Holos source code:
-                https://github.com/holos-aafc/Holos/blob/23a53f1fe6796145cc3ac43c005dbcc560421deb/H.Core/Services/Initialization/Crops/CropInitializationService.Water.cs#L60
-            """
             moisture_content_of_crop_percentage = 65
 
         else:
@@ -200,6 +215,8 @@ class LandManagementBase(Component):
                 moisture_content_of_crop_percentage = 12
 
         self.moisture_content_of_crop_percentage.value = moisture_content_of_crop_percentage
+
+        return
 
     def set_percentage_returns(self):
         """
@@ -264,12 +281,15 @@ class LandManagementBase(Component):
         self.biomass_coefficient_roots.value = residue_data.relative_biomass_root
         self.biomass_coefficient_extraroot.value = residue_data.relative_biomass_extraroot
 
-        if self.harvest_method.value in [
+        if self.harvest_method.value in {
             HarvestMethod.Swathing,
             HarvestMethod.GreenManure,
             HarvestMethod.Silage
-        ]:
-            self.biomass_coefficient_product.value = residue_data.relative_biomass_product + residue_data.relative_biomass_straw
+        }:
+            self.biomass_coefficient_product.value = (
+                residue_data.relative_biomass_product
+                + residue_data.relative_biomass_straw
+            )
             self.biomass_coefficient_straw.value = 0
             self.biomass_coefficient_roots.value = residue_data.relative_biomass_root
             self.biomass_coefficient_extraroot.value = residue_data.relative_biomass_extraroot
@@ -302,49 +322,51 @@ class LandManagementBase(Component):
             crop_type=self.crop_type.value,
             table_9=TABLE_9)
 
-        self.nitrogen_content.value = crop_data.NitrogenContentResidues
+        self.nitrogen_content.value = crop_data.nitrogen_content_residues
 
 
 class CropViewItem(LandManagementBase):
     def __init__(
-            self,
-            name: str,
-            field_area: float,
-            current_year: int,
-            crop_year: int,
-            year_in_perennial_stand: int,
-            crop_type: CropType,
-            tillage_type: TillageType,
-            perennial_stand_id: UUID,
-            perennial_stand_length: int,
-            relative_biomass_information_data: RelativeBiomassInformationData,
-            crop_yield: float,
-            harvest_method: HarvestMethod,
-            nitrogen_fertilizer_rate: float,
-            under_sown_crops_used: bool,
-            field_system_component_guid: UUID,
-            province: CanadianProvince,
-            clay_content: float,
-            sand_content: float,
-            organic_carbon_percentage: float,
-            soil_top_layer_thickness: float,
-            soil_functional_category: SoilFunctionalCategory,
-            fertilizer_application_method: FertilizerApplicationMethodologies,
-            fertilizer_blend: FertilizerBlends,
-            evapotranspiration: list[float],
-            precipitation: list[float],
-            temperature: list[float],
+        self,
+        name: str,
+        field_area: float,
+        current_year: int,
+        crop_year: int,
+        year_in_perennial_stand: int,
+        crop_type: CropType,
+        tillage_type: TillageType,
+        perennial_stand_id: UUID,
+        perennial_stand_length: int,
+        relative_biomass_information_data: RelativeBiomassInformationData,
+        crop_yield: float,
+        harvest_method: HarvestMethod,
+        nitrogen_fertilizer_rate: float,
+        under_sown_crops_used: bool,
+        field_system_component_guid: UUID,
+        province: CanadianProvince,
+        clay_content: float,
+        sand_content: float,
+        organic_carbon_percentage: float,
+        soil_top_layer_thickness: float,
+        soil_functional_category: SoilFunctionalCategory,
+        fertilizer_application_method: FertilizerApplicationMethodologies,
+        fertilizer_blend: FertilizerBlends,
+        evapotranspiration: list[float],
+        precipitation: list[float],
+        temperature: list[float],
 
-            amount_of_irrigation: float = 0,
-            number_of_pesticide_passes: int = 0,
-            amount_of_manure_applied: float = 0,
-            manure_application_type: ManureApplicationTypes = ManureApplicationTypes.NotSelected,
-            manure_animal_source_type: ManureAnimalSourceTypes = ManureAnimalSourceTypes.NotSelected,
-            manure_state_type: ManureStateType = ManureStateType.not_selected,
-            manure_location_source_type: ManureLocationSourceType = ManureLocationSourceType.NotSelected,
+        amount_of_irrigation: float = 0,
+        number_of_pesticide_passes: int = 0,
+        amount_of_manure_applied: float = 0,
+        manure_application_type: ManureApplicationTypes = ManureApplicationTypes.NotSelected,
+        manure_animal_source_type: ManureAnimalSourceTypes = ManureAnimalSourceTypes.NotSelected,
+        manure_state_type: ManureStateType = ManureStateType.not_selected,
+        manure_location_source_type: ManureLocationSourceType = ManureLocationSourceType.NotSelected,
 
-            percentage_of_extraroots_returned_to_soil: float = 100.,
+        percentage_of_extraroots_returned_to_soil: float = 100.,
 
+        moisture_content_of_crop: float | None = None,
+        moisture_content_of_crop_percentage: float | None = None,
     ):
         """
 
@@ -353,16 +375,22 @@ class CropViewItem(LandManagementBase):
             field_area: (ha) area of the field
             current_year: current year of simulation (constant for all years of a crop rotation)
             crop_year: simulated year (each row in input file must correspond to a certain year)
-            year_in_perennial_stand: year within the perennial stand (if any). Each year of a perennial stand must have the year identified in the row of the input file. E.g. a six year perennial stand would have one row with this value set 1 for the first year, 2 for the second year, etc
+            year_in_perennial_stand: year within the perennial stand (if any). Each year of a perennial stand
+                must have the year identified in the row of the input file. E.g. a six year perennial stand would
+                have one row with this value set 1 for the first year, 2 for the second year, etc
             crop_type: CropType instance
             tillage_type: TillageType instance
-            perennial_stand_id: Used to group all years of a perennial stand together. Each year in a distinct perennial stand must have this value set. All years in the same perennial stand must have this same ID/value. Can be thought of as a 'group' ID
+            perennial_stand_id: Used to group all years of a perennial stand together. Each year in a distinct
+                perennial stand must have this value set. All years in the same perennial stand must have this same
+                ID/value. Can be thought of as a 'group' ID
             perennial_stand_length: (-) number of years a perennial crop is grown
             relative_biomass_information_data: RelativeBiomassInformationData instance
             crop_yield: (kg(DM)/ha) crop yield
             harvest_method: HarvestMethod
             nitrogen_fertilizer_rate: (kg(N)/ha) applied nitrogen
-            under_sown_crops_used: Set to True when this view item is a perennial crop and the previous year is an annual crop and the user wants to indicate that this year's crop (the perennial) is undersown into the previous year's crop (the annual)
+            under_sown_crops_used: Set to True when this view item is a perennial crop and the previous year is
+                an annual crop and the user wants to indicate that this year's crop (the perennial) is
+                undersown into the previous year's crop (the annual)
             field_system_component_guid: Unique ID for each field component on the farm
             province: CanadianProvince instance
             clay_content: (-) fraction of clay in soil (between 0 and 1)
@@ -370,10 +398,12 @@ class CropViewItem(LandManagementBase):
             organic_carbon_percentage: (%) percentage of organic C in soil (between 0 and 100)
             soil_top_layer_thickness: (mm) thickness of the soil top layer
             soil_functional_category: SoilFunctionalCategory instance
+            fertilizer_application_method: FertilizerApplicationMethodologies instance
             fertilizer_blend: FertilizerBlends instance
             evapotranspiration: (mm/d) all-year daily values of reference crop evapotranspiration
             precipitation: (mm/d) all-year values of precipitation
             temperature: (degrees Celsius) all-year values of air temperature
+
             amount_of_irrigation: (mm/ha) total amount of irrigation
             number_of_pesticide_passes: number of pesticide passes
             amount_of_manure_applied: (kg/ha) amount of manure applied to the field
@@ -381,6 +411,12 @@ class CropViewItem(LandManagementBase):
             manure_animal_source_type: ManureAnimalSourceTypes instance
             manure_state_type: ManureStateType instance
             manure_location_source_type: ManureLocationSourceType instance
+
+            percentage_of_extraroots_returned_to_soil: (-) fraction of extraroots returned to soil (between 0 and 1)
+
+            moisture_content_of_crop: (-) fraction of moisture content in crop (between 0 and 1)
+            moisture_content_of_crop_percentage: (%) percentage of moisture content in crop (between 0 and 1). In None,
+                a default value is inferred from the crop type and harvest method.
         """
         super().__init__()
 
@@ -405,8 +441,16 @@ class CropViewItem(LandManagementBase):
         self.amount_of_irrigation.value = amount_of_irrigation
         self.set_irrigation_type()
 
-        self.moisture_content_of_crop.value = relative_biomass_information_data.moisture_content_of_product / 100
-        self.set_moisture_content()
+        if moisture_content_of_crop is None:
+            self.moisture_content_of_crop.value = relative_biomass_information_data.moisture_content_of_product / 100
+        else:
+            self.moisture_content_of_crop.value = moisture_content_of_crop
+
+        if moisture_content_of_crop_percentage is None:
+            self.set_moisture_content()
+        else:
+            self.moisture_content_of_crop_percentage.value = moisture_content_of_crop_percentage
+
         self.percentage_of_extraroots_returned_to_soil.value = percentage_of_extraroots_returned_to_soil
         self.set_percentage_returns()
         self.number_of_pesticide_passes.value = number_of_pesticide_passes

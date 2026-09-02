@@ -1,25 +1,37 @@
 from pathlib import Path
-from typing import Generator
+from typing import Generator, Optional, Any
 
 from pandas import DataFrame
 
 from pyholos.components.common import convert_province_name
-from pyholos.farm.farm_inputs import (BeefCattleInput, DairyCattleInput,
-                                      FieldsInput, SheepFlockInput,
-                                      WeatherSummary)
+from pyholos.farm.farm_inputs import (
+    BeefCattleInput,
+    DairyCattleInput,
+    FieldsInput,
+    SheepFlockInput,
+    WeatherSummary,
+    BeefCattleComponent,
+    DairyCattleComponent,
+    SheepFlockComponent,
+    CropViewItem,
+)
 from pyholos.farm.farm_settings import ParamsFarmSettings
 from pyholos.soil import (convert_soil_functional_category_name,
                           convert_soil_texture_name)
+from pyholos.farm.enums import (ChosenClimateAcquisition,
+                                SoilDataAcquisitionMethod,
+                                YieldAssignmentMethod,
+                                CarbonModellingStrategies)
 
 
 class Farm:
     def __init__(
             self,
             farm_settings: ParamsFarmSettings,
-            beef_cattle_data: BeefCattleInput = None,
-            dairy_cattle_data: DairyCattleInput = None,
-            sheep_flock_data: SheepFlockInput = None,
-            fields_data: FieldsInput = None,
+            beef_cattle_data: Optional[list[list[BeefCattleComponent]]] = None,
+            dairy_cattle_data: Optional[list[list[DairyCattleComponent]]] = None,
+            sheep_flock_data: Optional[list[list[SheepFlockComponent]]] = None,
+            fields_data: Optional[list[list[CropViewItem]]] = None,
     ):
         self.farm_settings = farm_settings
         self.beef = beef_cattle_data
@@ -54,8 +66,8 @@ class Farm:
                 name_output_file = df['Name'].unique()[0]
                 df.to_csv(path_dir / f'{name_output_file}.csv', index=False)
 
-    def export_to_dict(self) -> dict:
-        res = {**self.farm_settings.export_to_dict()}
+    def export_to_dict(self) -> dict[str, list[str] | list[list[Any]]]:
+        res: dict[str, list[str] | list[list[Any]]] = {**self.farm_settings.export_to_dict()}
         for k, v in self._iter_over_animal_components():
             dir_name = self._set_dir_name(entry=k)
             res[dir_name] = [[v.to_dict() for v in component] for component in v]
@@ -67,11 +79,15 @@ def create_farm(
         latitude: float,
         longitude: float,
         weather_summary: WeatherSummary,
-        beef_cattle_data: BeefCattleInput = None,
-        dairy_cattle_data: DairyCattleInput = None,
-        sheep_flock_data: SheepFlockInput = None,
-        fields_data: FieldsInput = None,
-) -> Farm:
+        climate_data_acquisition: ChosenClimateAcquisition = ChosenClimateAcquisition.NASA,
+        yield_assignment_method: YieldAssignmentMethod = YieldAssignmentMethod.SmallAreaData,
+        soil_data_acquisition_method: SoilDataAcquisitionMethod = SoilDataAcquisitionMethod.Default,
+        carbon_modelling_strategy: CarbonModellingStrategies = CarbonModellingStrategies.ICBM,
+        beef_cattle_data: Optional[BeefCattleInput] = None,
+        dairy_cattle_data: Optional[DairyCattleInput] = None,
+        sheep_flock_data: Optional[SheepFlockInput] = None,
+        fields_data: Optional[FieldsInput] = None,
+        ) -> Farm:
     farm = Farm(
         farm_settings=ParamsFarmSettings(
             latitude=latitude,
@@ -79,7 +95,11 @@ def create_farm(
             year=weather_summary.year,
             monthly_precipitation=weather_summary.monthly_precipitation,
             monthly_potential_evapotranspiration=weather_summary.monthly_potential_evapotranspiration,
-            monthly_temperature=weather_summary.monthly_temperature)
+            monthly_temperature=weather_summary.monthly_temperature,
+            yield_assignment_method=yield_assignment_method,
+            soil_data_acquisition_method=soil_data_acquisition_method,
+            carbon_modelling_strategy=carbon_modelling_strategy,
+            climate_data_acquisition=climate_data_acquisition)
     )
 
     params_soil = farm.farm_settings.params_soil

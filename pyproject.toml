@@ -23,6 +23,8 @@ dependencies = { file = ["requirements.txt"] }
 
 [tool.setuptools]
 include-package-data = true
+package-dir = { "" = "src" }
+packages = ["pyholos"]
 
 [tool.setuptools.package-data]
 "pyholos" = ["resources/**/*"]
@@ -35,3 +37,7 @@ Issues = "https://github.com/Mon-Systeme-Fourrager/pyholos/issues"
 
 [tool.ruff.format]
 quote-style = "preserve"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=src --cov-report=term-missing"
