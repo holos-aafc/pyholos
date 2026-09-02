@@ -1,0 +1,239 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installation &mdash; PyHolos v.1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=6c7b0eaa"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Usage" href="usage.html" />
+    <link rel="prev" title="Overview" href="overview.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            PyHolos
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#git-git">Git </a></li>
+<li class="toctree-l3"><a class="reference internal" href="#conda-conda">conda </a></li>
+<li class="toctree-l3"><a class="reference internal" href="#github-github">GitHub </a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pycharm-pycharm">PyCharm </a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#the-pyholos-package">The PyHolos package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#soil-data-files">Soil data files</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">PyHolos</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Installation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/installation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<section id="git-git">
+<h3>Git <img alt="git" class="no-scaled-link" src="_images/logo_git.png" style="height: 2ex;" /><a class="headerlink" href="#git-git" title="Link to this heading"></a></h3>
+<p><strong>Git</strong> is a free and open source distributed version control system that allows versioning your code.
+Ensure that <code class="docutils literal notranslate"><span class="pre">git</span></code> executable is installed: open a terminal (e.g. Windows PowerShell) and type <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">--version</span></code>.</p>
+<p>If <strong>Git</strong> is not installed, you may install it following the instructions
+<a class="reference external" href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">here</a>.</p>
+</section>
+<section id="conda-conda">
+<h3>conda <img alt="conda" class="no-scaled-link" src="_images/logo_conda.png" style="height: 2ex;" /><a class="headerlink" href="#conda-conda" title="Link to this heading"></a></h3>
+<p><strong>conda</strong> is a package and environment manager. It allows to create environments, install Python<sup>TM</sup> packages
+and their dependencies within these environments. <strong>miniconda</strong> is a free minimal installer for <strong>conda</strong>.</p>
+<p>Ensure that <code class="docutils literal notranslate"><span class="pre">conda</span></code> executable is installed by typing in a terminal <code class="code docutils literal notranslate"><span class="pre">conda</span> <span class="pre">--version</span></code>.
+If <code class="docutils literal notranslate"><span class="pre">conda</span></code> is not installed (command not found) you can install it by following <a class="reference external" href="https://conda.io/projects/conda/en/latest/user-guide/install/index.html#regular-installation">these instructions</a> (install
+<code class="docutils literal notranslate"><span class="pre">miniconda</span></code>).</p>
+<p>Once <strong>miniconda</strong> installed, you will be able to see an <em>Anaconda Powershell Prompt (Miniconda3)</em> added to your system.
+This terminal will allow you to run <code class="docutils literal notranslate"><span class="pre">conda</span></code> commands. You may also execute <code class="docutils literal notranslate"><span class="pre">conda</span></code> with other terminals.
+In order to do so, type in <em>Anaconda Powershell Prompt (Miniconda3)</em> <code class="code docutils literal notranslate"><span class="pre">conda</span> <span class="pre">init</span></code> (refer to this <a class="reference external" href="https://docs.conda.io/projects/conda/en/latest/dev-guide/deep-dives/activation.html">doc</a> for details).</p>
+</section>
+<section id="github-github">
+<h3>GitHub <img alt="github" class="no-scaled-link" src="_images/logo_github.png" style="height: 2ex;" /><a class="headerlink" href="#github-github" title="Link to this heading"></a></h3>
+<p>You must also ensure that you have a valid <strong>GitHub</strong>. You can create your account by the instructions
+<a class="reference external" href="https://docs.github.com/en/get-started/start-your-journey/creating-an-account-on-github">here</a>.</p>
+<p>It is recommended to clone projects from <strong>GitHub</strong> using the Secure Shell Protocol (SSH) protocol. Ensure that
+your <strong>GitHub</strong> profile has a public SSH key linked to a private key locally. Check out your existing SSH keys by
+going to your <strong>GitHub</strong> profile settings:</p>
+<img alt="_images/ssh_keys.png" class="align-center" src="_images/ssh_keys.png" />
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>For more details on how to check if you have existing SSH keys, refer to the instructions <a class="reference external" href="https://docs.github.com/en/authentication/connecting-to-github-with-ssh/checking-for-existing-ssh-keys">here</a>.</p>
+<p>If you want to create an new pair of SSH-keys, please follow the instructions <a class="reference external" href="https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent">here</a>.</p>
+</section>
+<section id="pycharm-pycharm">
+<h3>PyCharm <img alt="pycharm" class="no-scaled-link" src="_images/logo_pycharm.png" style="height: 2ex;" /><a class="headerlink" href="#pycharm-pycharm" title="Link to this heading"></a></h3>
+<p><strong>PyCharm</strong> is an integrated development environment (IDE) used for programming in Python<sup>TM</sup>. It provides powerful
+facilities for code analysis, debugging, testing and versioning, among others.</p>
+<p>To install <strong>PyCharm</strong>, you will have to download the executable from <a class="reference external" href="https://www.jetbrains.com/pycharm/download/">here</a> (Professional or Community edition) and then execute it in your PC.</p>
+</section>
+</section>
+<section id="the-pyholos-package">
+<h2>The PyHolos package<a class="headerlink" href="#the-pyholos-package" title="Link to this heading"></a></h2>
+<p>Go the folder where you would like to clone <code class="docutils literal notranslate"><span class="pre">PyHolos</span></code>. Right-click on the window and open a terminal then
+type:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:ProjetSOM/scenarios_virtual.git
+</pre></div>
+</div>
+<p>Move inside the project folder:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>pyholos
+</pre></div>
+</div>
+<p>Now you can create a <strong>conda</strong> (or <strong>mamba</strong>) environment inside which you will install <code class="docutils literal notranslate"><span class="pre">pyholos</span></code> and all its
+dependencies. Let’s create and activate an environment called ‘MyEnv’:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>MyEnv<span class="w"> </span>python<span class="w"> </span>pip
+conda<span class="w"> </span>activate<span class="w"> </span>MyEnv
+</pre></div>
+</div>
+<p>Now install the dependencies using <code class="docutils literal notranslate"><span class="pre">pip</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+<p>Finally, install <code class="docutils literal notranslate"><span class="pre">pyholos</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</pre></div>
+</div>
+<p>You’re done installing the package!</p>
+<p>Launch now PyCharm <img alt="pycharm" class="no-scaled-link" src="_images/logo_pycharm.png" style="height: 2ex;" /> and open the package folder as a project:</p>
+<img alt="_images/pycharm_open_project.png" class="align-center" src="_images/pycharm_open_project.png" />
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Go now to:</p>
+<p><strong>File</strong> → <strong>Settings</strong> → <strong>Project: scenario_virtual/Python</strong> → <strong>interpreter</strong> → <strong>Add Interpreter</strong> → <strong>Add local Interpreter…</strong></p>
+<p>then choose <strong>Virtualenv Environment</strong> and pick an <strong>Existing</strong> environment.
+Under <img alt="windows" class="no-scaled-link" src="_images/logo_windows.png" style="height: 2ex;" />, the <strong>conda</strong> environment interpreter that you need must be situated under :</p>
+<p><strong>C:\Users\&lt;YourUserName&gt;\AppData\Local\miniconda3\envs\&lt;YourEnvironmentName&gt;\python.exe</strong></p>
+<img alt="_images/pycharm_add_interpreter.png" class="align-center" src="_images/pycharm_add_interpreter.png" />
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>pip</strong> is another package manager (often faster) for installing package dependencies than <strong>conda</strong>. It can be
+installed within a <strong>conda</strong> environment.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the future, <cite>pyholos</cite> will be deployed to third-party software repositories (e.g. PyPI). Meanwhile, the user will
+need to clone the source code in order to build it locally.</p>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>&lt;directory_where_pyholos_will_be_cloned&gt;
+git<span class="w"> </span>clone<span class="w"> </span>git@github.com:Mon-Systeme-Fourrager/holos_service.git
+<span class="nb">cd</span><span class="w"> </span>holos_service
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</pre></div>
+</div>
+</section>
+<section id="soil-data-files">
+<h2>Soil data files<a class="headerlink" href="#soil-data-files" title="Link to this heading"></a></h2>
+<p>Soil data is required when using PyHolos to create inputs for Holoc CLI. As in the C# source code of Holos, PyHolos uses
+the data provided by the Soil Landscapes of Canada (<a class="reference external" href="https://open.canada.ca/data/en/dataset/5ad5e20c-f2bb-497d-a2a2-440eec6e10cd">SLC</a>).
+Two types of data are required, respectively CSV and GeoJSON types.
+The CSV files include soil information per polygon and can be downloaded by hitting “Pre-packaged CSV files” in <a class="reference external" href="https://open.canada.ca/data/en/dataset/5ad5e20c-f2bb-497d-a2a2-440eec6e10cd">SLC</a>
+(downloads a zip file called “soil_landscapes_of_canada_v3r2_csv.zip”).
+The GeoJSON file includes complimentary spatially-identified soil information, downloadable by hitting
+“Pre-packaged GeoJSON files” in <a class="reference external" href="https://open.canada.ca/data/en/dataset/5ad5e20c-f2bb-497d-a2a2-440eec6e10cd">SLC</a>
+(downloads a zip file called “soil_landscapes_of_canada_v3r2_geojson.zip”).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For convenience the soil data are already added to this project under <code class="docutils literal notranslate"><span class="pre">src/pyholos/resources</span></code>. Prior to using
+PyHolos, extract the zipped SLC files <code class="docutils literal notranslate"><span class="pre">soil_landscapes_of_canada_v3r2_geojson.zip</span></code> and remove the zip file.
+<strong>The soil data files are only required when PyHolos is used to create input files for Holos CLI.</strong></p>
+<a class="reference internal image-reference" href="_images/location_slc_data.png"><img alt="_images/location_slc_data.png" class="align-center" src="_images/location_slc_data.png" style="height: 400px;" />
+</a>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="overview.html" class="btn btn-neutral float-left" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="usage.html" class="btn btn-neutral float-right" title="Usage" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Agriculture and Agri-Food Canada (AAFC).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
