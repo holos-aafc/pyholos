@@ -1,10 +1,11 @@
 import unittest
 from datetime import date
 from pathlib import Path
+
 import numpy as np
 
 from pyholos.common2 import CanadianProvince
-from pyholos.components.animals import common, beef
+from pyholos.components.animals import beef, common
 from pyholos.soil import SoilTexture
 from pyholos.utils import read_holos_resource_table
 

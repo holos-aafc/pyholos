@@ -1,10 +1,10 @@
 # default_enums.py
 # This script contains default values for enums classes to use when instanciating a Farm with create_farm function
-from pyholos.farm.enums import (ResidueInputCalculationMethod,
-                                SoilDataAcquisitionMethod,
+from pyholos.farm.enums import (CarbonModellingStrategies,
                                 ChosenClimateAcquisition,
-                                YieldAssignmentMethod,
-                                CarbonModellingStrategies)
+                                ResidueInputCalculationMethod,
+                                SoilDataAcquisitionMethod,
+                                YieldAssignmentMethod)
 
 
 class DefaultEnums:

@@ -1,8 +1,8 @@
-from functools import cached_property
-from enum import Enum, auto
 from dataclasses import dataclass
-from typing import ClassVar, Any, TypeAliasType
 from datetime import date
+from enum import Enum, auto
+from functools import cached_property
+from typing import Any, ClassVar, TypeAliasType
 
 from pandas import DataFrame, to_numeric
 from pydantic import BaseModel, Field, NonNegativeFloat
@@ -13,11 +13,10 @@ from pyholos.common2 import CanadianProvince
 from pyholos.components.common import (
     ComponentCategory,
     calculate_fraction_of_nitrogen_lost_by_leaching_and_runoff)
-from pyholos.config import PathsHolosResources
+from pyholos.config import DATE_FMT, PathsHolosResources
 from pyholos.defaults import Defaults
 from pyholos.soil import SoilTexture
 from pyholos.utils import AutoNameEnum, read_holos_resource_table
-from pyholos.config import DATE_FMT
 
 
 class AnimalComponent:

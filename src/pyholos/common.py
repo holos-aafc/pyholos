@@ -1,5 +1,5 @@
-from enum import Enum, StrEnum, auto, unique
 from dataclasses import dataclass
+from enum import Enum, StrEnum, auto, unique
 from typing import Any
 
 from pyholos.common2 import CanadianProvince

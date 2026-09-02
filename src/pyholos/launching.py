@@ -1,6 +1,6 @@
 import subprocess
 from pathlib import Path, PureWindowsPath
-from typing import Optional, Iterator
+from typing import Iterator, Optional
 
 from pyholos.config import PATH_HOLOS_CLI
 from pyholos.utils import print_holos_msg

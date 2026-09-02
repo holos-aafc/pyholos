@@ -1,27 +1,18 @@
-from datetime import date
 from dataclasses import dataclass, field
+from datetime import date
 from typing import Any, ClassVar, TypeAliasType
 from uuid import UUID
 
 from pyholos.common import EnumGeneric
 from pyholos.components.animals.common import (
-    AnimalComponent,
-    AnimalType,
-    Bedding,
-    BeddingMaterialType,
-    Diet,
-    DietAdditiveType,
-    HousingType,
-    LivestockEmissionConversionFactorsData,
-    ManureStateType,
-    Milk,
-    ProductionStage,
+    AnimalComponent, AnimalType, Bedding, BeddingMaterialType, Diet,
+    DietAdditiveType, HousingType, LivestockEmissionConversionFactorsData,
+    ManureStateType, Milk, ProductionStage,
     get_ammonia_emission_factor_for_storage_of_beef_and_dairy_cattle_manure,
     get_beef_and_dairy_cattle_coefficient_data,
     get_beef_and_dairy_cattle_feeding_activity_coefficient,
     get_default_methane_producing_capacity_of_manure,
-    get_fraction_of_organic_nitrogen_mineralized_data
-)
+    get_fraction_of_organic_nitrogen_mineralized_data)
 from pyholos.components.common import ComponentType
 
 COMPONENT_TYPE_ROOT = "H.Core.Models.Animals.Beef"

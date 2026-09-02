@@ -2,31 +2,24 @@ from uuid import UUID
 
 from pyholos.common import Component, HolosVar
 from pyholos.common2 import CanadianProvince
-from pyholos.components.animals.common import (
-    ManureAnimalSourceTypes,
-    ManureLocationSourceType,
-    ManureStateType,
-)
-from pyholos.components.land_management.carbon.climate import calculate_climate_parameter
-from pyholos.components.land_management.carbon.management import calculate_management_factor
+from pyholos.components.animals.common import (ManureAnimalSourceTypes,
+                                               ManureLocationSourceType,
+                                               ManureStateType)
+from pyholos.components.land_management.carbon.climate import \
+    calculate_climate_parameter
+from pyholos.components.land_management.carbon.management import \
+    calculate_management_factor
 from pyholos.components.land_management.carbon.relative_biomass_information import (
-    RelativeBiomassInformationData,
-    get_nitrogen_lignin_content_in_crops_data,
-    parse_table_9,
-)
-from pyholos.components.land_management.carbon.tillage import calculate_tillage_factor
+    RelativeBiomassInformationData, get_nitrogen_lignin_content_in_crops_data,
+    parse_table_9)
+from pyholos.components.land_management.carbon.tillage import \
+    calculate_tillage_factor
 from pyholos.components.land_management.common import (
-    FertilizerApplicationMethodologies,
-    FertilizerBlends,
-    HarvestMethod,
-    IrrigationType,
-    ManureApplicationTypes,
-    TillageType,
-    TimePeriodCategory,
-    get_fuel_energy_estimate,
-    get_herbicide_energy_estimate,
-)
-from pyholos.components.land_management.crop import CropType, get_nitrogen_fixation
+    FertilizerApplicationMethodologies, FertilizerBlends, HarvestMethod,
+    IrrigationType, ManureApplicationTypes, TillageType, TimePeriodCategory,
+    get_fuel_energy_estimate, get_herbicide_energy_estimate)
+from pyholos.components.land_management.crop import (CropType,
+                                                     get_nitrogen_fixation)
 from pyholos.core_constants import CoreConstants
 from pyholos.defaults import Defaults
 from pyholos.soil import SoilFunctionalCategory

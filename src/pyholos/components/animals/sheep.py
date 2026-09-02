@@ -1,6 +1,6 @@
+from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
-from dataclasses import dataclass
 from uuid import UUID
 
 from pandas import to_numeric
@@ -8,20 +8,12 @@ from pandas import to_numeric
 from pyholos import utils
 from pyholos.common import Component, HolosVar
 from pyholos.components.animals.common import (
-    AnimalType,
-    Bedding,
-    BeddingMaterialType,
-    Diet,
-    DietAdditiveType,
-    HousingType,
-    LivestockEmissionConversionFactorsData,
-    ManureStateType,
-    ProductionStage,
-    convert_animal_type_name,
+    AnimalType, Bedding, BeddingMaterialType, Diet, DietAdditiveType,
+    HousingType, LivestockEmissionConversionFactorsData, ManureStateType,
+    ProductionStage, convert_animal_type_name,
     get_default_manure_composition_data,
     get_default_methane_producing_capacity_of_manure,
-    get_manure_excretion_rate,
-)
+    get_manure_excretion_rate)
 from pyholos.components.common import ComponentType
 from pyholos.config import DATE_FMT, PathsHolosResources
 

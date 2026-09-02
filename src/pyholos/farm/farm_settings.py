@@ -7,9 +7,9 @@ from pyholos.defaults import Defaults
 from pyholos.defaults_enums import DefaultEnums
 from pyholos.farm.enums import (CarbonModellingStrategies,
                                 ChosenClimateAcquisition,
-                                YieldAssignmentMethod,
                                 ResidueInputCalculationMethod,
-                                SoilDataAcquisitionMethod)
+                                SoilDataAcquisitionMethod,
+                                YieldAssignmentMethod)
 from pyholos.soil import set_soil_properties
 
 

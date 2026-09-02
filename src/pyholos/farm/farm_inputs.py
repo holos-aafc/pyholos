@@ -1,48 +1,29 @@
 from __future__ import annotations
 
-from datetime import date
 from abc import ABC, abstractmethod
-from typing import ClassVar, Generator, Type, Optional, Annotated, Mapping, Any
+from datetime import date
 from functools import partial
+from typing import Annotated, Any, ClassVar, Generator, Mapping, Optional, Type
 from uuid import UUID, uuid4
 
-from pydantic import (
-    BaseModel,
-    Field,
-    NonNegativeFloat,
-    NonNegativeInt,
-    PositiveFloat,
-    PositiveInt,
-    field_validator
-)
+from pydantic import (BaseModel, Field, NonNegativeFloat, NonNegativeInt,
+                      PositiveFloat, PositiveInt, field_validator)
 
 from pyholos.common2 import CanadianProvince
 from pyholos.components.animals import beef, dairy, sheep
-from pyholos.components.animals.common import (
-    BeddingMaterialType,
-    Diet,
-    DietAdditiveType,
-    HousingType,
-    ManureAnimalSourceTypes,
-    ManureLocationSourceType,
-    ManureStateType,
-    Milk,
-    ProductionStage,
-    get_manure_emission_factors
-)
+from pyholos.components.animals.common import (BeddingMaterialType, Diet,
+                                               DietAdditiveType, HousingType,
+                                               ManureAnimalSourceTypes,
+                                               ManureLocationSourceType,
+                                               ManureStateType, Milk,
+                                               ProductionStage,
+                                               get_manure_emission_factors)
 from pyholos.components.land_management.carbon.relative_biomass_information import (
-    RelativeBiomassInformationData,
-    get_relative_biomass_information_data,
-    parse_table_7
-)
+    RelativeBiomassInformationData, get_relative_biomass_information_data,
+    parse_table_7)
 from pyholos.components.land_management.common import (
-    FertilizerApplicationMethodologies,
-    FertilizerBlends,
-    HarvestMethod,
-    IrrigationType,
-    ManureApplicationTypes,
-    TillageType
-)
+    FertilizerApplicationMethodologies, FertilizerBlends, HarvestMethod,
+    IrrigationType, ManureApplicationTypes, TillageType)
 from pyholos.components.land_management.crop import CropType
 from pyholos.components.land_management.field_system import CropViewItem
 from pyholos.core_constants import CoreConstants

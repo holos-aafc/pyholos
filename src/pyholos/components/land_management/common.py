@@ -1,6 +1,6 @@
-from typing import Hashable
 from enum import auto
 from pathlib import Path
+from typing import Hashable
 
 from pandas import DataFrame, MultiIndex
 

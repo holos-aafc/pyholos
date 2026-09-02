@@ -1,27 +1,21 @@
 from pathlib import Path
-from typing import Generator, Optional, Any
+from typing import Any, Generator, Optional
 
 from pandas import DataFrame
 
 from pyholos.components.common import convert_province_name
-from pyholos.farm.farm_inputs import (
-    BeefCattleInput,
-    DairyCattleInput,
-    FieldsInput,
-    SheepFlockInput,
-    WeatherSummary,
-    BeefCattleComponent,
-    DairyCattleComponent,
-    SheepFlockComponent,
-    CropViewItem,
-)
+from pyholos.farm.enums import (CarbonModellingStrategies,
+                                ChosenClimateAcquisition,
+                                SoilDataAcquisitionMethod,
+                                YieldAssignmentMethod)
+from pyholos.farm.farm_inputs import (BeefCattleComponent, BeefCattleInput,
+                                      CropViewItem, DairyCattleComponent,
+                                      DairyCattleInput, FieldsInput,
+                                      SheepFlockComponent, SheepFlockInput,
+                                      WeatherSummary)
 from pyholos.farm.farm_settings import ParamsFarmSettings
 from pyholos.soil import (convert_soil_functional_category_name,
                           convert_soil_texture_name)
-from pyholos.farm.enums import (ChosenClimateAcquisition,
-                                SoilDataAcquisitionMethod,
-                                YieldAssignmentMethod,
-                                CarbonModellingStrategies)
 
 
 class Farm:
