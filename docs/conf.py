@@ -7,9 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'PyHolos'
-copyright = '2025, Mon Système Fourrager'
-author = 'Mon Système Fourrager'
-release = 'v.0.1.0'
+copyright = '2026, Agriculture and Agri-Food Canada (AAFC)'
+release = 'v.1.0.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
